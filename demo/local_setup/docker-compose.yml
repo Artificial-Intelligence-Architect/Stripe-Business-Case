@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: stripe-oltp
+    environment:
+      POSTGRES_DB: stripe_oltp
+      POSTGRES_USER: stripe
+      POSTGRES_PASSWORD: stripe_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../../sql/oltp/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./sample_data/transactions.csv:/tmp/transactions.csv
+    networks:
+      - stripe-network
+
+  mongodb:
+    image: mongo:7
+    container_name: stripe-nosql
+    environment:
+      MONGO_INITDB_DATABASE: stripe_nosql
+    ports:
+      - "27017:27017"
+    networks:
+      - stripe-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: stripe-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+    ports:
+      - "9092:9092"
+    networks:
+      - stripe-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: stripe-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - stripe-network
+
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    container_name: stripe-airflow
+    depends_on:
+      - postgres
+      - kafka
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://stripe:stripe_pass@postgres/stripe_oltp
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../pipeline/airflow:/opt/airflow/dags
+    networks:
+      - stripe-network
+
+networks:
+  stripe-network:
+    driver: bridge
