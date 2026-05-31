@@ -1,0 +1,17 @@
+[2026-05-29T01:56:01.830+0200] {taskinstance.py:1157} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: stripe_daily_etl.validate_sources manual__2026-05-28T23:55:58.113270+00:00 [queued]>
+[2026-05-29T01:56:01.835+0200] {taskinstance.py:1157} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: stripe_daily_etl.validate_sources manual__2026-05-28T23:55:58.113270+00:00 [queued]>
+[2026-05-29T01:56:01.835+0200] {taskinstance.py:1359} INFO - Starting attempt 1 of 2
+[2026-05-29T01:56:01.845+0200] {taskinstance.py:1380} INFO - Executing <Task(BashOperator): validate_sources> on 2026-05-28 23:55:58.113270+00:00
+[2026-05-29T01:56:01.848+0200] {standard_task_runner.py:57} INFO - Started process 625327 to run task
+[2026-05-29T01:56:01.850+0200] {standard_task_runner.py:84} INFO - Running: ['airflow', 'tasks', 'run', 'stripe_daily_etl', 'validate_sources', 'manual__2026-05-28T23:55:58.113270+00:00', '--job-id', '6', '--raw', '--subdir', 'DAGS_FOLDER/stripe_daily_etl.py', '--cfg-path', '/tmp/tmplkhfxx9y']
+[2026-05-29T01:56:01.851+0200] {standard_task_runner.py:85} INFO - Job 6: Subtask validate_sources
+[2026-05-29T01:56:01.879+0200] {task_command.py:415} INFO - Running <TaskInstance: stripe_daily_etl.validate_sources manual__2026-05-28T23:55:58.113270+00:00 [running]> on host optiplex3060
+[2026-05-29T01:56:01.921+0200] {taskinstance.py:1660} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='data-engineering' AIRFLOW_CTX_DAG_ID='stripe_daily_etl' AIRFLOW_CTX_TASK_ID='validate_sources' AIRFLOW_CTX_EXECUTION_DATE='2026-05-28T23:55:58.113270+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-05-28T23:55:58.113270+00:00'
+[2026-05-29T01:56:01.922+0200] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-05-29T01:56:01.922+0200] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', "echo 'Validation des sources OK'"]
+[2026-05-29T01:56:01.927+0200] {subprocess.py:86} INFO - Output:
+[2026-05-29T01:56:01.928+0200] {subprocess.py:93} INFO - Validation des sources OK
+[2026-05-29T01:56:01.929+0200] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-05-29T01:56:01.942+0200] {taskinstance.py:1398} INFO - Marking task as SUCCESS. dag_id=stripe_daily_etl, task_id=validate_sources, execution_date=20260528T235558, start_date=20260528T235601, end_date=20260528T235601
+[2026-05-29T01:56:01.982+0200] {local_task_job_runner.py:228} INFO - Task exited with return code 0
+[2026-05-29T01:56:02.000+0200] {taskinstance.py:2776} INFO - 1 downstream tasks scheduled from follow-on schedule check
