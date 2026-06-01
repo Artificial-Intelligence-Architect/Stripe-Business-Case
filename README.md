@@ -58,48 +58,113 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 
 ## 2. Repository Structure
 
-```
 Stripe-Business-Case/
 ├── demo/
-│   ├── local_setup/
-│   │   ├── docker-compose.yml          # Local environment (PG, Kafka, Mongo)
-│   │   └── sample_data/
-│   │       └── transactions.csv        # Test dataset
-│   ├── sample_data/
-│   │   └── fraud_events.json           # Sample MongoDB fraud event documents
-│   └── screenshots/                    # Proof of execution (Airflow, Evidently, SQL)
+│ ├── local_setup/
+│ │ ├── docker-compose.yml # Local environment (PG, Kafka, Mongo)
+│ │ └── sample_data/
+│ │ └── transactions.csv # Test dataset
+│ ├── sample_data/
+│ │ ├── fraud_events.json # Sample MongoDB fraud event documents
+│ │ └── transactions.csv # Sample PostgreSQL transactions
+│ └── screenshots/ # Proof of execution
+│ ├── airflow_dag_grid_run.png # Airflow DAG execution success
+│ ├── airflow_graph_run.png # Airflow DAG graph view
+│ ├── evidently_report.html # Evidently AI drift report
+│ └── sql_query_result.png # PostgreSQL fraud detection query
+├── docs/ # Architecture diagrams
+│ ├── architecture_diagram.png
+│ ├── architecture_diagram.svg
+│ ├── data_ingestion.png
+│ └── data_ingestion.svg
 ├── ml/
-│   ├── feature_engineering.py          # Feature construction (Feast)
-│   ├── model_monitoring.py             # Drift detection (Evidently AI)
-│   ├── generate_evidently_report.py    # HTML report generation
-│   └── requirements.txt
+│ ├── feature_engineering.py # Feature construction (Feast)
+│ ├── model_monitoring.py # Drift detection (Evidently AI)
+│ ├── generate_evidently_report.py # HTML report generation
+│ └── requirements.txt
 ├── nosql/mongodb/
-│   ├── aggregation_queries.js          # MongoDB aggregation pipelines
-│   ├── index.js                        # Index definitions
-│   └── sample_documents.json           # Representative documents per collection
+│ ├── aggregation_queries.js # MongoDB aggregation pipelines
+│ ├── index.js # Index definitions
+│ └── sample_documents.json # Representative documents per collection
 ├── pipeline/
-│   ├── airflow/
-│   │   └── stripe_daily_etl.py         # Airflow DAG (batch orchestration)
-│   ├── dbt/stripe_dbt/
-│   │   ├── models/staging/             # Staging layer (stg_transactions)
-│   │   ├── models/intermediate/        # Enrichment (int_transactions_enriched)
-│   │   ├── models/marts/               # Facts and dimensions (fct_, dim_)
-│   │   └── macros/                     # Currency conversion macro
-│   └── flink/
-│       └── FraudDetectionJob.java      # Flink real-time fraud detection job
-└── sql/
-    ├── oltp/
-    │   ├── schema.sql                  # Full PostgreSQL DDL (tables, indices, triggers)
-    │   └── queries.sql                 # Operational queries
-    ├── olap/
-    │   ├── schema.sql                  # Snowflake DDL (star schema, materialised views)
-    │   └── queries_analytics.sql       # Analytical queries (RFM, fraud, revenue)
-    └── security/
-        ├── rbac_setup.sql              # Role creation and access policies
-        └── gdpr_erasure.sql            # GDPR right-to-erasure procedure
-```
+│ ├── airflow/
+│ │ └── stripe_daily_etl.py # Airflow DAG (batch orchestration)
+│ ├── dbt/stripe_dbt/
+│ │ ├── models/staging/ # Staging layer (stg_transactions)
+│ │ ├── models/intermediate/ # Enrichment (int_transactions_enriched)
+│ │ ├── models/marts/ # Facts and dimensions (fct_, dim_)
+│ │ └── macros/ # Currency conversion macro
+│ └── flink/
+│ └── FraudDetectionJob.java # Flink real-time fraud detection job
+├── sql/
+│ ├── oltp/
+│ │ ├── schema.sql # Full PostgreSQL DDL (tables, indices, triggers)
+│ │ └── queries.sql # Operational queries
+│ ├── olap/
+│ │ ├── schema.sql # Snowflake DDL (star schema, materialised views)
+│ │ └── queries_analytics.sql # Analytical queries (RFM, fraud, revenue)
+│ └── security/
+│ ├── ccpa_compliance.sql # CCPA compliance procedures
+│ ├── rbac_setup.sql # Role creation and access policies
+│ └── gdpr_erasure.sql # GDPR right-to-erasure procedure
+├── Enonce-stripe.md
+├── LICENSE
+└── README.md
+cat > /tmp/new_structure.md << 'ENDOFFILE'
+## 2. Repository Structure
 
----
+Stripe-Business-Case/
+├── demo/
+│ ├── local_setup/
+│ │ ├── docker-compose.yml # Local environment (PG, Kafka, Mongo)
+│ │ └── sample_data/
+│ │ └── transactions.csv # Test dataset
+│ ├── sample_data/
+│ │ ├── fraud_events.json # Sample MongoDB fraud event documents
+│ │ └── transactions.csv # Sample PostgreSQL transactions
+│ └── screenshots/ # Proof of execution
+│ ├── airflow_dag_grid_run.png # Airflow DAG execution success
+│ ├── airflow_graph_run.png # Airflow DAG graph view
+│ ├── evidently_report.html # Evidently AI drift report
+│ └── sql_query_result.png # PostgreSQL fraud detection query
+├── docs/ # Architecture diagrams
+│ ├── architecture_diagram.png
+│ ├── architecture_diagram.svg
+│ ├── data_ingestion.png
+│ └── data_ingestion.svg
+├── ml/
+│ ├── feature_engineering.py # Feature construction (Feast)
+│ ├── model_monitoring.py # Drift detection (Evidently AI)
+│ ├── generate_evidently_report.py # HTML report generation
+│ └── requirements.txt
+├── nosql/mongodb/
+│ ├── aggregation_queries.js # MongoDB aggregation pipelines
+│ ├── index.js # Index definitions
+│ └── sample_documents.json # Representative documents per collection
+├── pipeline/
+│ ├── airflow/
+│ │ └── stripe_daily_etl.py # Airflow DAG (batch orchestration)
+│ ├── dbt/stripe_dbt/
+│ │ ├── models/staging/ # Staging layer (stg_transactions)
+│ │ ├── models/intermediate/ # Enrichment (int_transactions_enriched)
+│ │ ├── models/marts/ # Facts and dimensions (fct_, dim_)
+│ │ └── macros/ # Currency conversion macro
+│ └── flink/
+│ └── FraudDetectionJob.java # Flink real-time fraud detection job
+├── sql/
+│ ├── oltp/
+│ │ ├── schema.sql # Full PostgreSQL DDL (tables, indices, triggers)
+│ │ └── queries.sql # Operational queries
+│ ├── olap/
+│ │ ├── schema.sql # Snowflake DDL (star schema, materialised views)
+│ │ └── queries_analytics.sql # Analytical queries (RFM, fraud, revenue)
+│ └── security/
+│ ├── ccpa_compliance.sql # CCPA compliance procedures
+│ ├── rbac_setup.sql # Role creation and access policies
+│ └── gdpr_erasure.sql # GDPR right-to-erasure procedure
+├── Enonce-stripe.md
+├── LICENSE
+└── README.md
 
 ## 3. Architecture Overview
 
