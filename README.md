@@ -64,60 +64,69 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 ---
 
 ## 2. Repository Structure
-''' 
+```text
 Stripe-Business-Case/
 ├── demo/
-│ ├── local_setup/
-│ │ ├── docker-compose.yml
-│ │ └── sample_data/
-│ │ └── transactions.csv
-│ ├── sample_data/
-│ │ ├── fraud_events.json
-│ │ └── transactions.csv
-│ └── screenshots/
-│ ├── airflow_dag_grid_run.png
-│ ├── airflow_graph_run.png
-│ ├── evidently_report.html
-│ └── sql_query_result.png
+│   ├── local_setup/
+│   │   ├── docker-compose.yml
+│   │   └── sample_data/
+│   │       └── transactions.csv
+│   ├── sample_data/
+│   │   ├── fraud_events.json
+│   │   └── transactions.csv
+│   └── screenshots/
+│       ├── airflow_dag_grid_run.png
+│       ├── airflow_graph_run.png
+│       ├── evidently_report.html
+│       └── sql_query_result.png
+│
 ├── docs/
-│ ├── architecture_diagram.png
-│ ├── architecture_diagram.svg
-│ ├── data_ingestion.png
-│ └── data_ingestion.svg
+│   ├── architecture_diagram.png
+│   ├── architecture_diagram.svg
+│   ├── data_ingestion.png
+│   └── data_ingestion.svg
+│
 ├── ml/
-│ ├── feature_engineering.py
-│ ├── model_monitoring.py
-│ ├── generate_evidently_report.py
-│ └── requirements.txt
-├── nosql/mongodb/
-│ ├── aggregation_queries.js
-│ ├── index.js
-│ └── sample_documents.json
+│   ├── feature_engineering.py
+│   ├── model_monitoring.py
+│   ├── generate_evidently_report.py
+│   └── requirements.txt
+│
+├── nosql/
+│   └── mongodb/
+│       ├── aggregation_queries.js
+│       ├── index.js
+│       └── sample_documents.json
+│
 ├── pipeline/
-│ ├── airflow/
-│ │ └── stripe_daily_etl.py
-│ ├── dbt/stripe_dbt/
-│ │ ├── models/staging/
-│ │ ├── models/intermediate/
-│ │ ├── models/marts/
-│ │ └── macros/
-│ └── flink/
-│ └── FraudDetectionJob.java
+│   ├── airflow/
+│   │   └── stripe_daily_etl.py
+│   ├── dbt/
+│   │   └── stripe_dbt/
+│   │       ├── models/
+│   │       │   ├── staging/
+│   │       │   ├── intermediate/
+│   │       │   └── marts/
+│   │       └── macros/
+│   └── flink/
+│       └── FraudDetectionJob.java
+│
 ├── sql/
-│ ├── oltp/
-│ │ ├── schema.sql
-│ │ └── queries.sql
-│ ├── olap/
-│ │ ├── schema.sql
-│ │ └── queries_analytics.sql
-│ └── security/
-│ ├── ccpa_compliance.sql
-│ ├── rbac_setup.sql
-│ └── gdpr_erasure.sql
+│   ├── oltp/
+│   │   ├── schema.sql
+│   │   └── queries.sql
+│   ├── olap/
+│   │   ├── schema.sql
+│   │   └── queries_analytics.sql
+│   └── security/
+│       ├── ccpa_compliance.sql
+│       ├── rbac_setup.sql
+│       └── gdpr_erasure.sql
+│
 ├── Enonce-stripe.md
 ├── LICENSE
 └── README.md
-'''
+```
 ---
 
 ## 3. Architecture Overview
@@ -197,20 +206,18 @@ Exported diagrams are available in docs/:
    - Architecture Diagram (PNG)(https://docs/architecture_diagram.png)
 
    - Data Ingestion Diagram (PNG) (https://docs/data_ingestion.png)*   
-'''
-----
-```
+
+---
+
 ### 4. OLTP Model — PostgreSQL
-## Technology Choice: PostgreSQL + Citus
+#### Technology Choice: PostgreSQL + Citus
 
-# Justification: 
-PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by merchant_id without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
+**Justification:** PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by merchant_id without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
 
-# Discarded alternative: 
-CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
+**Discarded alternative:** CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
 
-# Simplified ERD
-
+#### Simplified ERD
+```text
 ┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
 │   customers     │       │   transactions   │       │   merchants     │
 ├─────────────────┤       ├──────────────────┤       ├─────────────────┤
@@ -234,7 +241,7 @@ CockroachDB — inter-node network overhead too high for sub-10 ms transactions;
                                                      │    changed_at   │
                                                      └─────────────────┘
 
-# SQL Schema (Extract)
+#### SQL Schema (Extract)
 CREATE TABLE transactions (
     transaction_id  UUID         NOT NULL DEFAULT gen_random_uuid(),
     merchant_id     UUID         NOT NULL REFERENCES merchants(merchant_id),
@@ -269,7 +276,7 @@ CREATE INDEX CONCURRENTLY idx_transactions_pending
 
     Full DDL, indices, and audit triggers available in sql/oltp/schema.sql
 
-# OLTP Performance Strategies
+#### OLTP Performance Strategies
 | Technique	              | Implementation	                        | Benefit
 | Range partitioning	  | Monthly by created_at	                | Partition pruning, simplified archiving
 | Partial indices	      | WHERE fraud_score > 0.7	                | 80% reduction in index size
@@ -277,18 +284,15 @@ CREATE INDEX CONCURRENTLY idx_transactions_pending
 | Citus sharding	      | merchant_id as distribution key	        | Linear scale-out
 | Synchronous replication |	1 primary + 2 replicas (quorum write)   | RPO = 0
 
-'''
 ---
 ### 5. OLAP Model — Star Schema
 Technology Choice: Snowflake
 
-# Justification: 
-Compute/storage separation allows compute warehouses to scale independently without interruption. Time Travel (90 days) supports audit compliance and reprocessing in the event of errors. Automatic clustering on date_sk and merchant_sk eliminates costly sort operations on large fact tables. Native dbt connectors with atomic MERGE operations support SCD processing.
+**Justification:** Compute/storage separation allows compute warehouses to scale independently without interruption. Time Travel (90 days) supports audit compliance and reprocessing in the event of errors. Automatic clustering on date_sk and merchant_sk eliminates costly sort operations on large fact tables. Native dbt connectors with atomic MERGE operations support SCD processing.
 
-# Discarded alternative: 
-Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
+**Discarded alternative:** Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
 
-# Star Schema
+#### Star Schema
                     ┌─────────────────┐
                     │   dim_date      │
                     ├─────────────────┤
@@ -323,7 +327,7 @@ Amazon Redshift — tight compute/storage coupling, manual VACUUM management, le
                                         └─────────────────┘
     SCD Type 2 implemented on dim_customer and dim_merchant for full change historisation.
 
-# Materialised View (Extract)
+#### Materialised View (Extract)
 CREATE OR REPLACE VIEW mv_daily_revenue AS
 SELECT
     d.full_date,
@@ -342,7 +346,7 @@ GROUP BY 1, 2, 3;
     Full schema and DDLs in sql/olap/schema.sql
 
 # dbt Models
-stg_transactions              → Cleaning, casting, deduplication
+stg_transactions                   → Cleaning, casting, deduplication
     └── int_transactions_enriched  → Enrichment (currency, geolocation, segment)
             ├── fct_transactions   → Main fact table
             ├── dim_customer       → SCD Type 2
@@ -352,11 +356,9 @@ stg_transactions              → Cleaning, casting, deduplication
 ### 6. NoSQL Model — MongoDB
 # Technology Choice: MongoDB Atlas
 
-# Justification: 
-The aggregation pipeline enables complex transformations in a single network round-trip, which is critical for real-time ML features. Integrated Atlas Search (Lucene) removes the need for a separate Elasticsearch cluster. Change streams provide a clean replacement for Debezium when synchronising MongoDB to Kafka. Automatic sharding on merchant_id ensures an even data distribution.
+**Justification:** The aggregation pipeline enables complex transformations in a single network round-trip, which is critical for real-time ML features. Integrated Atlas Search (Lucene) removes the need for a separate Elasticsearch cluster. Change streams provide a clean replacement for Debezium when synchronising MongoDB to Kafka. Automatic sharding on merchant_id ensures an even data distribution.
 
-# Discarded alternative: 
-Apache Cassandra — excellent for high-frequency writes, but limited aggregation capabilities, no flexible schema, and complex ML integration.
+**Discarded alternative:** Apache Cassandra — excellent for high-frequency writes, but limited aggregation capabilities, no flexible schema, and complex ML integration.
 
 # Main Collections
 fraud_events                                                    
