@@ -1,8 +1,8 @@
 -- ============================================================
--- SQL/OLTP: Requêtes opérationnelles (PostgreSQL)
+-- SQL/OLTP: Operational Queries (PostgreSQL)
 -- ============================================================
 
--- 1. Détection en temps réel : transactions à haut risque (dernières 5 min)
+-- 1. Real-time detection: high-risk transactions (last 5 min)
 SELECT
     t.transaction_id,
     t.merchant_id,
@@ -18,7 +18,7 @@ WHERE t.fraud_score > 0.9
   AND t.created_at > NOW() - INTERVAL '5 minutes'
 ORDER BY t.fraud_score DESC;
 
--- 2. Activité récente d'un marchand (dernière heure)
+-- 2. Recent merchant activity (last hour)
 SELECT
     status,
     COUNT(*) AS nb_transactions,
@@ -26,11 +26,11 @@ SELECT
     AVG(amount) AS avg_amount,
     AVG(fraud_score) AS avg_fraud_score
 FROM transactions
-WHERE merchant_id = '7c9e6679-7425-40de-944b-e07fc1f90ae7'  -- exemple d'UUID marchand
+WHERE merchant_id = '7c9e6679-7425-40de-944b-e07fc1f90ae7'  -- example merchant UUID
   AND created_at > NOW() - INTERVAL '1 hour'
 GROUP BY status;
 
--- 3. Transactions en échec pour un client (24h)
+-- 3. Failed transactions for a customer (24h)
 SELECT
     transaction_id,
     amount,
@@ -43,7 +43,7 @@ WHERE customer_id = '3d0b4a7e-1234-5678-9abc-def012345678'
   AND created_at > NOW() - INTERVAL '24 hours'
 ORDER BY created_at DESC;
 
--- 4. Vélocité anormale : clients avec > 5 transactions en 1 minute
+-- 4. Abnormal velocity: customers with > 5 transactions in 1 minute
 SELECT
     customer_id,
     COUNT(*) AS txn_count,
@@ -56,7 +56,7 @@ HAVING COUNT(*) >= 5
    AND MAX(created_at) - MIN(created_at) <= INTERVAL '1 minute'
 ORDER BY txn_count DESC;
 
--- 5. Récapitulatif quotidien (aujourd'hui)
+-- 5. Daily summary (today)
 SELECT
     COUNT(*) AS total_transactions,
     COUNT(*) FILTER (WHERE status = 'success') AS successful,
@@ -69,7 +69,7 @@ SELECT
 FROM transactions
 WHERE created_at >= CURRENT_DATE;
 
--- 6. Top 10 marchands par volume sur les 7 derniers jours
+-- 6. Top 10 merchants by volume over the last 7 days
 SELECT
     m.merchant_id,
     m.name,

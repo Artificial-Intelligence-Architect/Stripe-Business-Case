@@ -1,7 +1,7 @@
--- Table de faits pour le schéma en étoile
+-- Fact table for the star schema
 select
     transaction_id,
-    date_sk, -- peut être généré depuis created_at via une macro
+    date_sk, -- can be generated from created_at via a macro
     merchant_id,
     customer_id,
     payment_method,
@@ -14,4 +14,4 @@ select
     device_type,
     ip_country
 from {{ ref('int_transactions_enriched') }}
--- jointure avec dim_date pour récupérer date_sk (à adapter)
+-- join with dim_date to retrieve date_sk (to be adapted)

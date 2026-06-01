@@ -1,13 +1,13 @@
 // ============================================================
-// NoSQL/MongoDB: Requêtes d'agrégation analytiques
+// NoSQL/MongoDB: Analytical Aggregation Queries
 // ============================================================
 
-// Connexion à la base cible (à adapter)
+// Connect to the target database (to be adapted)
 // use stripe_nosql;
 
 // ------------------------------------------------------------
-// 1. Top 10 marchands à risque (dernière heure)
-//    Basé sur les signaux de fraude des transactions récentes.
+// 1. Top 10 at-risk merchants (last hour)
+//    Based on fraud signals from recent transactions.
 // ------------------------------------------------------------
 db.fraud_events.aggregate([
   {
@@ -44,8 +44,8 @@ db.fraud_events.aggregate([
 ]);
 
 // ------------------------------------------------------------
-// 2. Sessions utilisateur ayant conduit à une transaction
-//    frauduleuse dans les 5 minutes qui suivent.
+// 2. User sessions that led to a fraudulent transaction
+//    within the following 5 minutes.
 // ------------------------------------------------------------
 db.user_sessions.aggregate([
   {
@@ -59,7 +59,7 @@ db.user_sessions.aggregate([
               $and: [
                 { $eq:  ["$customer_id", "$$cid"] },
                 { $gte: ["$timestamp", "$$sess_end"] },
-                { $lte: ["$timestamp", { $add: ["$$sess_end", 300000] }] } // 5 minutes après
+                { $lte: ["$timestamp", { $add: ["$$sess_end", 300000] }] } // 5 minutes later
               ]
             },
             decision: "flagged"
@@ -97,7 +97,7 @@ db.user_sessions.aggregate([
 ]);
 
 // ------------------------------------------------------------
-// 3. Distribution des erreurs par service (dernières 24 heures)
+// 3. Error distribution by service (last 24 hours)
 // ------------------------------------------------------------
 db.app_logs.aggregate([
   {
@@ -131,8 +131,8 @@ db.app_logs.aggregate([
 ]);
 
 // ------------------------------------------------------------
-// 4. Score moyen de fraude par version de modèle
-//    (évaluation de performance des modèles ML)
+// 4. Average fraud score by model version
+//    (ML model performance evaluation)
 // ------------------------------------------------------------
 db.fraud_events.aggregate([
   {
@@ -157,7 +157,7 @@ db.fraud_events.aggregate([
 ]);
 
 // ------------------------------------------------------------
-// 5. Détection d'anomalies IP (plus de 100 erreurs en 24h)
+// 5. IP anomaly detection (more than 100 errors in 24 hours)
 // ------------------------------------------------------------
 db.app_logs.aggregate([
   {
@@ -169,7 +169,7 @@ db.app_logs.aggregate([
   {
     $group: {
       _id: "$context.merchant_id",
-      ip: { $first: "$host" }, // utilisation simplifiée (en réel, utiliser l'IP source)
+      ip: { $first: "$host" }, // simplified usage (in production, use the source IP)
       error_count: { $sum: 1 },
       distinct_services: { $addToSet: "$service" }
     }

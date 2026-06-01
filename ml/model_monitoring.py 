@@ -1,6 +1,6 @@
 """
-Monitoring de modèle - Drift detection (Evidently AI)
-Détecte le data drift et les variations de performance.
+Model Monitoring - Drift Detection (Evidently AI)
+Detects data drift and performance variations.
 """
 
 from evidently.report import Report
@@ -10,8 +10,8 @@ import pandas as pd
 def check_model_health(reference_data: pd.DataFrame,
                        current_data: pd.DataFrame) -> dict:
     """
-    Vérifie le data drift et les performances du modèle.
-    Retourne un dictionnaire avec les métriques et un flag de retraining.
+    Checks for data drift and model performance.
+    Returns a dictionary containing metrics and a retraining flag.
     """
     report = Report(metrics=[
         DataDriftPreset(),
@@ -25,7 +25,7 @@ def check_model_health(reference_data: pd.DataFrame,
 
     result = report.as_dict()
 
-    # Seuils de déclenchement retraining
+    # Retraining trigger thresholds
     auc_threshold = 0.92
     drift_threshold = 0.15
 
@@ -45,16 +45,16 @@ def check_model_health(reference_data: pd.DataFrame,
     }
 
 
-# Exemple d'utilisation locale
+# Local usage example
 if __name__ == "__main__":
-    # Données de référence (entraînement)
+    # Reference data (training)
     reference = pd.DataFrame({
         "feature1": [0.1, 0.2, 0.3],
         "feature2": [10, 20, 30],
         "target": [0, 1, 0]
     })
 
-    # Données courantes (production)
+    # Current data (production)
     current = pd.DataFrame({
         "feature1": [0.2, 0.25, 0.4],
         "feature2": [12, 25, 35],
@@ -62,5 +62,5 @@ if __name__ == "__main__":
     })
 
     result = check_model_health(reference, current)
-    print(f"Retraining nécessaire: {result['needs_retraining']}")
-    print(f"AUC actuel: {result['current_auc']}, Drift: {result['drift_score']}")
+    print(f"Retraining needed: {result['needs_retraining']}")
+    print(f"Current AUC: {result['current_auc']}, Drift: {result['drift_score']}")

@@ -2,7 +2,7 @@ name: 'stripe_olap'
 version: '1.0.0'
 config-version: 2
 
-profile: 'stripe_snowflake'  # doit correspondre à un profil dans ~/.dbt/profiles.yml
+profile: 'stripe_snowflake'  # must match a profile in ~/.dbt/profiles.yml
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]

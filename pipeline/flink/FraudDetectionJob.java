@@ -1,11 +1,11 @@
 /*
- * Job Flink : Détection de fraude en temps réel
+ * Flink Job: Real-time Fraud Detection
  * 
- * Consomme les transactions depuis le topic Kafka "oltp.transactions",
- * applique une logique de scoring (modèle ML simulé ou appel externe),
- * et émet les alertes dans le topic "events.fraud".
+ * Consumes transactions from the Kafka topic "oltp.transactions",
+ * applies scoring logic (simulated ML model or external call),
+ * and emits alerts to the "events.fraud" topic.
  *
- * Dépendances Maven (extrait) :
+ * Maven Dependencies (extract):
  * <dependency>
  *   <groupId>org.apache.flink</groupId>
  *   <artifactId>flink-streaming-java</artifactId>
@@ -39,16 +39,16 @@ import java.util.Properties;
 public class FraudDetectionJob {
 
     // ------------------------------------------------------------------------
-    //  Point d'entrée du job
+    //  Job entry point
     // ------------------------------------------------------------------------
     public static void main(String[] args) throws Exception {
-        // Création de l'environnement d'exécution Flink
+        // Create the Flink execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        // Activation des checkpoints pour la tolérance aux pannes (toutes les 5 secondes)
+        // Enable checkpointing for fault tolerance (every 5 seconds)
         env.enableCheckpointing(5000);
 
         // --------------------------------------------------------------------
-        // 1. Configuration de la source Kafka (transactions)
+        // 1. Configure the Kafka source (transactions)
         // --------------------------------------------------------------------
         Properties consumerProps = new Properties();
         consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -56,11 +56,11 @@ public class FraudDetectionJob {
         consumerProps.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
 
         FlinkKafkaConsumer<Transaction> transactionSource = new FlinkKafkaConsumer<>(
-                "oltp.transactions",                                  // topic source
-                new TransactionDeserializationSchema(),               // désérialisation personnalisée
+                "oltp.transactions",                                  // source topic
+                new TransactionDeserializationSchema(),               // custom deserialisation
                 consumerProps
         );
-        // Stratégie de watermark : monotonique basée sur le champ timestamp de la transaction
+        // Watermark strategy: monotonous based on the transaction timestamp field
         transactionSource.assignTimestampsAndWatermarks(
                 WatermarkStrategy.<Transaction>forMonotonousTimestamps()
                         .withTimestampAssigner((event, timestamp) -> event.getTimestamp())
@@ -70,23 +70,23 @@ public class FraudDetectionJob {
                 .name("Kafka Source - Transactions");
 
         // --------------------------------------------------------------------
-        // 2. Logique de traitement : détection de fraude avec état
+        // 2. Processing logic: stateful fraud detection
         // --------------------------------------------------------------------
         DataStream<FraudAlert> fraudAlerts = transactions
-                .keyBy(Transaction::getCustomerId)   // partitionnement par client
+                .keyBy(Transaction::getCustomerId)   // partition by customer
                 .flatMap(new FraudDetectionProcessFunction())
                 .name("Fraud Detection Process");
 
         // --------------------------------------------------------------------
-        // 3. Configuration du sink Kafka (alertes de fraude)
+        // 3. Configure the Kafka sink (fraud alerts)
         // --------------------------------------------------------------------
         Properties producerProps = new Properties();
         producerProps.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
         producerProps.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "fraud-alert-producer");
 
         FlinkKafkaProducer<FraudAlert> alertSink = new FlinkKafkaProducer<>(
-                "events.fraud",                                        // topic destination
-                new FraudAlertSerializationSchema(),                   // sérialisation
+                "events.fraud",                                        // destination topic
+                new FraudAlertSerializationSchema(),                   // serialisation
                 producerProps,
                 FlinkKafkaProducer.Semantic.AT_LEAST_ONCE
         );
@@ -95,26 +95,26 @@ public class FraudDetectionJob {
                 .name("Kafka Sink - Fraud Alerts");
 
         // --------------------------------------------------------------------
-        // Exécution du job
+        // Execute the job
         // --------------------------------------------------------------------
         env.execute("Fraud Detection Job");
     }
 
     // ========================================================================
-    // Classes internes pour la logique métier
+    // Inner classes for business logic
     // ========================================================================
 
     /**
-     * Process function stateful pour la détection de fraude.
-     * Conserve le nombre de transactions et le montant total par client
-     * sur les 5 dernières minutes.
+     * Stateful process function for fraud detection.
+     * Maintains the transaction count and total amount per customer
+     * over the last 5 minutes.
      */
     public static class FraudDetectionProcessFunction
             extends RichFlatMapFunction<Transaction, FraudAlert> {
 
-        // État : nombre de transactions dans la fenêtre de 5 minutes
+        // State: number of transactions in the 5-minute window
         private transient ValueState<Integer> transactionCountState;
-        // État : montant total dans la fenêtre
+        // State: total amount in the window
         private transient ValueState<Double> totalAmountState;
 
         @Override
@@ -130,7 +130,7 @@ public class FraudDetectionJob {
 
         @Override
         public void flatMap(Transaction transaction, Collector<FraudAlert> out) throws Exception {
-            // Récupération de l'état actuel (initialisé à 0 s'il n'existe pas)
+            // Retrieve current state (initialised to 0 if it does not exist)
             Integer currentCount = transactionCountState.value();
             Double currentTotal = totalAmountState.value();
             if (currentCount == null) {
@@ -138,29 +138,29 @@ public class FraudDetectionJob {
                 currentTotal = 0.0;
             }
 
-            // Mise à jour des compteurs
+            // Update counters
             currentCount++;
             currentTotal += transaction.getAmount();
             transactionCountState.update(currentCount);
             totalAmountState.update(currentTotal);
 
-            // Logique de scoring : règle simple combinant vélocité et montant
-            // (En production, on appellerait ici un modèle ML externe via API REST)
+            // Scoring logic: simple rule combining velocity and amount
+            // (In production, an external ML model would be called here via REST API)
             boolean isFraudulent = false;
             double fraudScore = 0.0;
 
-            // Règle 1 : plus de 3 transactions en 5 minutes -> suspect
+            // Rule 1: more than 3 transactions in 5 minutes -> suspicious
             if (currentCount > 3) {
                 fraudScore += 0.5;
             }
-            // Règle 2 : montant total > 10 000 USD -> suspect
+            // Rule 2: total amount > 10,000 USD -> suspicious
             if (currentTotal > 10_000) {
                 fraudScore += 0.5;
             }
 
             isFraudulent = fraudScore >= 0.5;
 
-            // Création de l'alerte si fraude détectée
+            // Create the alert if fraud is detected
             if (isFraudulent) {
                 FraudAlert alert = new FraudAlert();
                 alert.setTransactionId(transaction.getTransactionId());
@@ -173,8 +173,8 @@ public class FraudDetectionJob {
 
                 out.collect(alert);
 
-                // Réinitialisation de l'état après émission pour éviter les doublons
-                // (selon la stratégie désirée, on peut le conserver ou le nettoyer)
+                // Reset state after emission to avoid duplicates
+                // (depending on the desired strategy, it can be kept or cleared)
                 // transactionCountState.clear();
                 // totalAmountState.clear();
             }
@@ -182,18 +182,18 @@ public class FraudDetectionJob {
     }
 
     // ========================================================================
-    // Modèles de données simples
+    // Simple data models
     // ========================================================================
 
     /**
-     * Représentation simplifiée d'une transaction issue de Kafka.
+     * Simplified representation of a transaction from Kafka.
      */
     public static class Transaction {
         private String transactionId;
         private String customerId;
         private String merchantId;
         private double amount;
-        private long timestamp; // epoch millisecondes
+        private long timestamp; // epoch milliseconds
 
         // Getters/Setters
         public String getTransactionId() { return transactionId; }
@@ -209,7 +209,7 @@ public class FraudDetectionJob {
     }
 
     /**
-     * Alerte de fraude émise vers Kafka.
+     * Fraud alert emitted to Kafka.
      */
     public static class FraudAlert {
         private String transactionId;
@@ -238,22 +238,22 @@ public class FraudDetectionJob {
     }
 
     // ========================================================================
-    // Schémas de sérialisation/désérialisation pour Kafka
+    // Kafka serialisation/deserialisation schemas
     // ========================================================================
 
     /**
-     * Désérialise un message Kafka JSON en objet Transaction.
-     * Dans la pratique, on utiliserait Jackson ou Gson.
+     * Deserialises a Kafka JSON message into a Transaction object.
+     * In practice, Jackson or Gson would be used.
      */
     public static class TransactionDeserializationSchema extends JSONKeyValueDeserializationSchema {
-        // Implémentation simplifiée : on suppose que le JSON contient les champs correspondants.
-        // Dans un cas réel, on étendrait AbstractDeserializationSchema<Transaction>.
+        // Simplified implementation: assumes the JSON contains the corresponding fields.
+        // In a real-world scenario, one would extend AbstractDeserializationSchema<Transaction>.
     }
 
     /**
-     * Sérialise un objet FraudAlert en JSON pour Kafka.
+     * Serialises a FraudAlert object into JSON for Kafka.
      */
     public static class FraudAlertSerializationSchema extends JSONKeyValueSerializationSchema {
-        // Implémentation simplifiée.
+        // Simplified implementation.
     }
 }

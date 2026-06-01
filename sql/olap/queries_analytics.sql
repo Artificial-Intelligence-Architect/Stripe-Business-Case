@@ -1,8 +1,8 @@
 -- ============================================================
--- SQL/OLAP: Requêtes analytiques (Snowflake)
+-- SQL/OLAP: Analytical Queries (Snowflake)
 -- ============================================================
 
--- 1. Revenus mensuels par marchand avec évolution MoM
+-- 1. Monthly revenue per merchant with MoM evolution
 WITH monthly_revenue AS (
     SELECT
         d.year,
@@ -30,7 +30,7 @@ SELECT
 FROM monthly_revenue
 ORDER BY year DESC, month DESC, revenue_usd DESC;
 
--- 2. Marchands avec taux de fraude anormal (> 2% sur l'année en cours)
+-- 2. Merchants with an abnormal fraud rate (> 2% over the current year)
 SELECT
     m.name                          AS merchant_name,
     m.tier,
@@ -48,11 +48,11 @@ JOIN dim_date d     ON f.date_sk = d.date_sk
 WHERE d.year = YEAR(CURRENT_DATE)
   AND m.is_current = true
 GROUP BY 1, 2, 3
-HAVING COUNT(*) >= 100              -- minimum statistique
+HAVING COUNT(*) >= 100              -- statistical minimum
    AND COUNT(*) FILTER (WHERE f.is_fraud) * 100.0 / COUNT(*) > 2.0
 ORDER BY fraud_rate_pct DESC;
 
--- 3. Segmentation client RFM (Recency, Frequency, Monetary)
+-- 3. RFM customer segmentation (Recency, Frequency, Monetary)
 WITH rfm_raw AS (
     SELECT
         c.customer_sk,
@@ -68,7 +68,7 @@ WITH rfm_raw AS (
 ),
 rfm_scored AS (
     SELECT *,
-        NTILE(5) OVER (ORDER BY recency_days ASC)   AS r_score,  -- 5 = plus récent
+        NTILE(5) OVER (ORDER BY recency_days ASC)   AS r_score,  -- 5 = most recent
         NTILE(5) OVER (ORDER BY frequency DESC)      AS f_score,
         NTILE(5) OVER (ORDER BY monetary_usd DESC)   AS m_score
     FROM rfm_raw

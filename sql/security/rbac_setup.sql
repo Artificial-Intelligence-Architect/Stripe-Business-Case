@@ -1,57 +1,57 @@
 -- ============================================================
--- SQL/Sécurité: Configuration RBAC (PostgreSQL)
+-- SQL/Security: RBAC Configuration (PostgreSQL)
 -- ============================================================
 
--- Création des rôles de groupe (sans login)
--- Ils servent de modèles de permissions pour les utilisateurs finaux.
+-- Create group roles (without login)
+-- These serve as permission templates for end users.
 CREATE ROLE analyst_read;
 CREATE ROLE engineer_write;
 CREATE ROLE compliance_officer;
 CREATE ROLE ml_service;
 
--- (Optionnel) Exemple de création d'utilisateurs héritant des rôles
+-- (Optional) Example of creating users inheriting the roles
 -- CREATE USER john_analyst WITH PASSWORD 'change_me' IN ROLE analyst_read;
 -- CREATE USER jane_engineer WITH PASSWORD 'change_me' IN ROLE engineer_write;
 
 -- ============================================================
--- 1. Rôle analyst_read : lectures métier (hors PII)
+-- 1. analyst_read role: business reads (excluding PII)
 -- ============================================================
 GRANT SELECT ON countries, currencies TO analyst_read;
 
--- Merchants : consultation autorisée
+-- Merchants: authorised for consultation
 GRANT SELECT ON merchants TO analyst_read;
 
--- Transactions : accès global, mais on retire la colonne sensible customer_id
+-- Transactions: global access, but the sensitive customer_id column is removed
 GRANT SELECT ON transactions TO analyst_read;
 REVOKE SELECT (customer_id) ON transactions FROM analyst_read;
 
--- Customers : pas d'accès direct (contient emails, hash)
--- (aucune permission accordée sur cette table)
+-- Customers: no direct access (contains emails, hash)
+-- (no permissions granted on this table)
 
 -- ============================================================
--- 2. Rôle engineer_write : opérations d'écriture sur le cœur métier
+-- 2. engineer_write role: write operations on core business entities
 -- ============================================================
 GRANT SELECT, INSERT, UPDATE ON transactions, merchants, customers TO engineer_write;
 GRANT SELECT ON countries, currencies TO engineer_write;
 
 -- ============================================================
--- 3. Rôle compliance_officer : accès complet en lecture
---    (y compris audit logs)
+-- 3. compliance_officer role: full read access
+--    (including audit logs)
 -- ============================================================
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO compliance_officer;
--- S'assurer que le rôle puisse lire les futures tables (via paramétrage)
+-- Ensure the role can read future tables (via configuration)
 -- ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO compliance_officer;
 
 -- ============================================================
--- 4. Rôle ml_service : accès strictement nécessaire pour le ML
+-- 4. ml_service role: strictly necessary access for ML
 -- ============================================================
--- Pour la table transactions, seules les colonnes transaction_id et fraud_score sont exposées.
+-- For the transactions table, only the transaction_id and fraud_score columns are exposed.
 GRANT SELECT (transaction_id, fraud_score) ON transactions TO ml_service;
--- Aucun autre accès (pas de merchants, customers, ni autres colonnes).
+-- No other access (no merchants, customers, or other columns).
 
 -- ============================================================
--- Vérifications (optionnel) : pour tester les permissions
+-- Checks (optional): to test the permissions
 -- ============================================================
 -- SET ROLE analyst_read;
--- SELECT * FROM transactions LIMIT 1; -- doit échouer sur customer_id
+-- SELECT * FROM transactions LIMIT 1; -- should fail on customer_id
 -- RESET ROLE;

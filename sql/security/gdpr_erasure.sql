@@ -1,37 +1,37 @@
 -- ============================================================
--- SQL/Sécurité: Procédure de droit à l'oubli (RGPD)
+-- SQL/Security: Right to Erasure Procedure (GDPR)
 -- ============================================================
 
--- Cette procédure anonymise les données personnelles d'un client
--- au lieu de les supprimer, pour préserver l'intégrité référentielle
--- des transactions et de l'audit.
+-- This procedure anonymises a customer's personal data
+-- instead of deleting it, in order to preserve the referential integrity
+-- of the transactions and the audit trail.
 
 CREATE OR REPLACE PROCEDURE gdpr_erase_customer(p_customer_id UUID)
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- 1. Anonymisation de l'enregistrement client
+    -- 1. Anonymise the customer record
     UPDATE customers
     SET
         email      = 'erased_' || MD5(customer_id::text) || '@deleted.stripe.com',
         email_hash = NULL
     WHERE customer_id = p_customer_id;
 
-    -- 2. Anonymisation des données de localisation/device dans ses transactions
+    -- 2. Anonymise location/device data in their transactions
     UPDATE transactions
     SET
         ip_country  = NULL,
         device_type = NULL
     WHERE customer_id = p_customer_id;
 
-    -- 3. Journalisation de l'opération (preuve de conformité)
+    -- 3. Log the operation (proof of compliance)
     INSERT INTO audit_log (table_name, operation, record_id, new_values)
     VALUES ('customers', 'D', p_customer_id,
             '{"reason": "GDPR_erasure_request"}'::jsonb);
 
-    -- Note : Aucune suppression physique n'est effectuée.
-    -- Les transactions restent associées au customer_id,
-    -- mais les données identifiantes ont été neutralisées.
+    -- Note: No physical deletion is performed.
+    -- Transactions remain associated with the customer_id,
+    -- but the identifying data has been neutralised.
     COMMIT;
 END;
 $$;

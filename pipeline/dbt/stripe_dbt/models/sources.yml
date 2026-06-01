@@ -6,7 +6,7 @@ sources:
     schema: staging
     tables:
       - name: raw_transactions
-        description: "Transactions brutes issues de Kafka/Snowpipe"
+        description: "Raw transactions from Kafka/Snowpipe"
         columns:
           - name: transaction_id
             tests: [unique, not_null]

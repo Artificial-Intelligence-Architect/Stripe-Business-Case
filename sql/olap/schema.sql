@@ -1,10 +1,10 @@
 -- ============================================================
--- SQL/OLAP: Modèle analytique Stripe (Snowflake)
+-- SQL/OLAP: Stripe Analytical Model (Snowflake)
 -- ============================================================
 
 -- Dimensions
 CREATE TABLE dim_date (
-    date_sk         INT          PRIMARY KEY,   -- format YYYYMMDD
+    date_sk         INT          PRIMARY KEY,   -- YYYYMMDD format
     full_date       DATE         NOT NULL,
     year            SMALLINT,
     quarter         SMALLINT,
@@ -19,7 +19,7 @@ CREATE TABLE dim_date (
 
 CREATE TABLE dim_merchant (
     merchant_sk     INT          PRIMARY KEY AUTOINCREMENT,
-    merchant_id     VARCHAR(36)  NOT NULL,       -- UUID source OLTP
+    merchant_id     VARCHAR(36)  NOT NULL,       -- UUID from OLTP source
     name            VARCHAR(255),
     country         CHAR(2),
     region          VARCHAR(50),
@@ -33,7 +33,7 @@ CREATE TABLE dim_customer (
     customer_sk     INT          PRIMARY KEY AUTOINCREMENT,
     customer_id     VARCHAR(36)  NOT NULL,
     country         CHAR(2),
-    segment         VARCHAR(30),                 -- calculé par ML (high_value, at_risk, etc.)
+    segment         VARCHAR(30),                 -- calculated by ML (high_value, at_risk, etc.)
     acquisition_channel VARCHAR(50),
     effective_from  DATE,
     effective_to    DATE,
@@ -47,10 +47,10 @@ CREATE TABLE dim_payment_method (
     card_type       VARCHAR(20)                  -- debit, credit, prepaid
 );
 
--- Table de faits
+-- Fact table
 CREATE TABLE fact_transactions (
     transaction_sk  BIGINT       PRIMARY KEY AUTOINCREMENT,
-    transaction_id  VARCHAR(36)  NOT NULL,        -- clé métier
+    transaction_id  VARCHAR(36)  NOT NULL,        -- business key
     date_sk         INT          REFERENCES dim_date(date_sk),
     merchant_sk     INT          REFERENCES dim_merchant(merchant_sk),
     customer_sk     INT          REFERENCES dim_customer(customer_sk),
@@ -66,8 +66,8 @@ CREATE TABLE fact_transactions (
 )
 CLUSTER BY (date_sk, merchant_sk);
 
--- Vues matérialisées (pré-agrégations)
--- Revenu journalier par marchand
+-- Materialised views (pre-aggregations)
+-- Daily revenue per merchant
 CREATE OR REPLACE VIEW mv_daily_revenue AS
 SELECT
     d.full_date,
@@ -86,7 +86,7 @@ JOIN dim_merchant m ON f.merchant_sk = m.merchant_sk
 WHERE m.is_current = true
 GROUP BY 1,2,3,4;
 
--- Segmentation client mensuelle
+-- Monthly customer segmentation
 CREATE OR REPLACE VIEW mv_customer_monthly AS
 SELECT
     d.year,

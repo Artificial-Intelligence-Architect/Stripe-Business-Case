@@ -1,6 +1,6 @@
-// Fichier nosql/mongodb/sample_documents.json
-// Utilisation : mongoimport --db stripe_nosql --collection fraud_events --file sample_documents.json --jsonArray
-// (ou importer chaque tableau séparément)
+// File nosql/mongodb/sample_documents.json
+// Usage: mongoimport --db stripe_nosql --collection fraud_events --file sample_documents.json --jsonArray
+// (or import each array separately)
 
 {
   "fraud_events": [

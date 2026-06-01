@@ -1,4 +1,4 @@
--- Joint les référentiels pour enrichir avant agrégation
+-- Joins reference data for enrichment before aggregation
 select
     t.transaction_id,
     t.merchant_id,

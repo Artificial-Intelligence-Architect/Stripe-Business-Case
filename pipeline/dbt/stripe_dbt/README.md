@@ -1,10 +1,10 @@
-# Projet dbt pour Stripe OLAP
+# dbt Project for Stripe OLAP
 
-Ce projet dbt transforme les données brutes chargées dans Snowflake (schéma `staging`) en un schéma en étoile (`analytics`).
+This dbt project transforms raw data loaded into Snowflake (`staging` schema) into a star schema (`analytics`).
 
-## Utilisation
+## Usage
 
-- Installer dbt-snowflake : `pip install dbt-snowflake`
-- Configurer le profil `profiles.yml` avec les identifiants Snowflake
-- Lancer : `dbt run --target prod`
-- Tester : `dbt test`
+- Install dbt-snowflake: `pip install dbt-snowflake`
+- Configure the `profiles.yml` profile with Snowflake credentials
+- Run: `dbt run --target prod`
+- Test: `dbt test`
