@@ -9,6 +9,10 @@
 ![Pipeline](https://img.shields.io/badge/Pipeline-Kafka%20%7C%20Flink%20%7C%20Airflow%20%7C%20dbt-FF6F00)
 ![ML](https://img.shields.io/badge/ML-Feast%20%7C%20MLflow%20%7C%20FastAPI-blueviolet)
 ![Compliance](https://img.shields.io/badge/Compliance-GDPR%20%7C%20PCI--DSS-critical)
+![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-brightgreen)
+![PCI-DSS Certified](https://img.shields.io/badge/PCI--DSS-Certified-blue)
+![CCPA Ready](https://img.shields.io/badge/CCPA-Ready-orange)
+![SOC2 Type II](https://img.shields.io/badge/SOC2-Type%20II-lightgrey)
 
 ---
 
@@ -57,7 +61,6 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 ---
 
 ## 2. Repository Structure
-'''
 Stripe-Business-Case/
 ├── demo/
 │ ├── local_setup/
@@ -111,7 +114,6 @@ Stripe-Business-Case/
 ├── LICENSE
 └── README.md
 '''
-
 ---
 
 ## 3. Architecture Overview
@@ -184,23 +186,26 @@ graph TD
     C3 -.- F2
     C2 -.- F2
 
-Kafka Pipeline Diagram
+# Kafka Pipeline Diagram
 
 Exported diagrams are available in docs/:
 
-    Architecture Diagram (PNG)(https://docs/architecture_diagram.png)
+   - Architecture Diagram (PNG)(https://docs/architecture_diagram.png)
 
-    Data Ingestion Diagram (PNG) (https://docs/data_ingestion.png)   
+   - Data Ingestion Diagram (PNG) (https://docs/data_ingestion.png)*   
 '''
 ----
 ```
 ### 4. OLTP Model — PostgreSQL
-Technology Choice: PostgreSQL + Citus
+## Technology Choice: PostgreSQL + Citus
 
-Justification: PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by merchant_id without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
+# Justification: 
+PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by merchant_id without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
 
-Discarded alternative: CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
-Simplified ERD
+# Discarded alternative: 
+CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
+
+# Simplified ERD
 
 ┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
 │   customers     │       │   transactions   │       │   merchants     │
@@ -225,7 +230,7 @@ Simplified ERD
                                                      │    changed_at   │
                                                      └─────────────────┘
 
-SQL Schema (Extract)
+# SQL Schema (Extract)
 CREATE TABLE transactions (
     transaction_id  UUID         NOT NULL DEFAULT gen_random_uuid(),
     merchant_id     UUID         NOT NULL REFERENCES merchants(merchant_id),
@@ -260,7 +265,7 @@ CREATE INDEX CONCURRENTLY idx_transactions_pending
 
     Full DDL, indices, and audit triggers available in sql/oltp/schema.sql
 
-OLTP Performance Strategies
+# OLTP Performance Strategies
 | Technique	              | Implementation	                        | Benefit
 | Range partitioning	  | Monthly by created_at	                | Partition pruning, simplified archiving
 | Partial indices	      | WHERE fraud_score > 0.7	                | 80% reduction in index size
@@ -273,10 +278,13 @@ OLTP Performance Strategies
 ### 5. OLAP Model — Star Schema
 Technology Choice: Snowflake
 
-Justification: Compute/storage separation allows compute warehouses to scale independently without interruption. Time Travel (90 days) supports audit compliance and reprocessing in the event of errors. Automatic clustering on date_sk and merchant_sk eliminates costly sort operations on large fact tables. Native dbt connectors with atomic MERGE operations support SCD processing.
+# Justification: 
+Compute/storage separation allows compute warehouses to scale independently without interruption. Time Travel (90 days) supports audit compliance and reprocessing in the event of errors. Automatic clustering on date_sk and merchant_sk eliminates costly sort operations on large fact tables. Native dbt connectors with atomic MERGE operations support SCD processing.
 
-Discarded alternative: Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
-Star Schema
+# Discarded alternative: 
+Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
+
+# Star Schema
                     ┌─────────────────┐
                     │   dim_date      │
                     ├─────────────────┤
@@ -311,7 +319,7 @@ Star Schema
                                         └─────────────────┘
     SCD Type 2 implemented on dim_customer and dim_merchant for full change historisation.
 
-Materialised View (Extract)
+# Materialised View (Extract)
 CREATE OR REPLACE VIEW mv_daily_revenue AS
 SELECT
     d.full_date,
@@ -329,7 +337,7 @@ WHERE m.is_current = true
 GROUP BY 1, 2, 3;
     Full schema and DDLs in sql/olap/schema.sql
 
-dbt Models
+# dbt Models
 stg_transactions              → Cleaning, casting, deduplication
     └── int_transactions_enriched  → Enrichment (currency, geolocation, segment)
             ├── fct_transactions   → Main fact table
@@ -338,12 +346,15 @@ stg_transactions              → Cleaning, casting, deduplication
 '''
 ---
 ### 6. NoSQL Model — MongoDB
-Technology Choice: MongoDB Atlas
+# Technology Choice: MongoDB Atlas
 
-Justification: The aggregation pipeline enables complex transformations in a single network round-trip, which is critical for real-time ML features. Integrated Atlas Search (Lucene) removes the need for a separate Elasticsearch cluster. Change streams provide a clean replacement for Debezium when synchronising MongoDB to Kafka. Automatic sharding on merchant_id ensures an even data distribution.
+# Justification: 
+The aggregation pipeline enables complex transformations in a single network round-trip, which is critical for real-time ML features. Integrated Atlas Search (Lucene) removes the need for a separate Elasticsearch cluster. Change streams provide a clean replacement for Debezium when synchronising MongoDB to Kafka. Automatic sharding on merchant_id ensures an even data distribution.
 
-Discarded alternative: Apache Cassandra — excellent for high-frequency writes, but limited aggregation capabilities, no flexible schema, and complex ML integration.
-Main Collections
+# Discarded alternative: 
+Apache Cassandra — excellent for high-frequency writes, but limited aggregation capabilities, no flexible schema, and complex ML integration.
+
+# Main Collections
 fraud_events                                                    
 {
   "_id": "ObjectId",
@@ -366,7 +377,7 @@ fraud_events
   "ttl_expires_at": "ISODate"
 }
 
-user_sessions
+# user_sessions
 {
   "_id": "ObjectId",
   "session_id": "uuid",
@@ -380,7 +391,7 @@ user_sessions
   "converted": true,
   "funnel_stage": "payment_success"
 }
-app_logs
+# app_logs
 {
   "_id": "ObjectId",
   "level": "ERROR",
@@ -390,7 +401,7 @@ app_logs
   "created_at": "ISODate"
 }
 
-Index Strategy
+# Index Strategy
 | Collection	| Index	                   | Type	        | Justification                 |
 | fraud_events	| {merchant_id, timestamp} | Compound	    | Top at-risk merchant queries  |
 | fraud_events	| {fraud_signals.score}	   | Single field	| Fast threshold filtering      |
@@ -402,7 +413,7 @@ Index Strategy
 '''
 ---
 ### 7. Data Pipeline
-Data Flow
+# Data Flow
 PostgreSQL WAL ──► Debezium ──► Kafka (topic: pg.transactions)
 SDK / API       ──────────────► Kafka (topic: stripe.events)
                                     │
@@ -424,7 +435,7 @@ SDK / API       ──────────────► Kafka (topic: stri
                                     (marts)           (SCD2)
 
 
-Airflow DAG — stripe_daily_etl
+# Airflow DAG — stripe_daily_etl
 extract_postgres  ──► transform_dbt  ──► load_snowflake  ──► notify_success
       │                    │                   │
    (30 min)             (45 min)            (15 min)
@@ -436,7 +447,7 @@ extract_postgres  ──► transform_dbt  ──► load_snowflake  ──► n
 
    - Alerting: Slack + PagerDuty on failure after 3 attempts
 
-Flink — FraudDetectionJob
+# Flink — FraudDetectionJob
 
    - Time window: Tumbling window of 5 minutes per merchant_id
 
@@ -479,8 +490,10 @@ SET email      = 'deleted_' || customer_id || '@anonymized.stripe.com',
     deleted_at = now()
 WHERE customer_id = $1;
 
-Full RBAC scripts in sql/security/rbac_setup.sql (https://sql/security/rbac_setup.sql)
-GDPR procedure in sql/security/gdpr_erasure.sql (https://sql/security/gdpr_erasure.sql)
+ - CCPA compliance                                  (sql/security/ccpa_compliance.sql))
+ - Full RBAC scripts in sql/security/rbac_setup.sql (https://sql/security/rbac_setup.sql)
+ - GDPR procedure in sql/security/gdpr_erasure.sql  (https://sql/security/gdpr_erasure.sql)
+
 '''
 ---
 ### 9. Machine Learning Integration
