@@ -6,8 +6,11 @@
 ![OLTP](https://img.shields.io/badge/OLTP-PostgreSQL%20%2B%20Citus-336791?logo=postgresql)
 ![OLAP](https://img.shields.io/badge/OLAP-Snowflake-29B5E8?logo=snowflake)
 ![NoSQL](https://img.shields.io/badge/NoSQL-MongoDB%20Atlas-47A248?logo=mongodb)
+
 ![Pipeline](https://img.shields.io/badge/Pipeline-Kafka%20%7C%20Flink%20%7C%20Airflow%20%7C%20dbt-FF6F00)
+
 ![ML](https://img.shields.io/badge/ML-Feast%20%7C%20MLflow%20%7C%20FastAPI-blueviolet)
+
 ![Compliance](https://img.shields.io/badge/Compliance-GDPR%20%7C%20PCI--DSS-critical)
 ![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-brightgreen)
 ![PCI-DSS Certified](https://img.shields.io/badge/PCI--DSS-Certified-blue)
@@ -61,6 +64,7 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 ---
 
 ## 2. Repository Structure
+''' 
 Stripe-Business-Case/
 ├── demo/
 │ ├── local_setup/
