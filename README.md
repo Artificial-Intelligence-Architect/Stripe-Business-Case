@@ -172,11 +172,11 @@ graph TD
 
 ### Kafka Pipeline Diagram
 
-![Kafka Data Pipeline](Apache%20Kafka%20Data%20Pipeline-2026-05-31-192449.svg)
+![Kafka Data Pipeline](Apache%20Kafka%20Data%20Pipeline.svg)
 
 ### Ingestion Diagram
 
-![Data Ingestion](Data%20Ingestion%20and-2026-05-31-192245.svg)
+![Data Ingestion](Data%20Ingestion.svg)
 
 ---
 
@@ -428,33 +428,105 @@ stg_transactions              → Cleaning, casting, deduplication
 ### Data Flow
 
 ```
-PostgreSQL WAL ──► Debezium ──► Kafka (topic: pg.transactions)
-SDK / API       ──────────────► Kafka (topic: stripe.events)
-                                    │
-                    ┌───────────────┼────────────────┐
-                    ▼               ▼                ▼
-              Flink Job       Kafka Connect      Kafka → S3
-           (FraudDetection)  (MongoDB Sink)    (Snowpipe)
-                    │               │                │
-                    ▼               ▼                ▼
-              fraud_score    fraud_events /     Snowflake
-              → PostgreSQL     user_sessions     staging
-              → Kafka                              │
-                                              Airflow + dbt
-                                           (transformations)
-                                                   │
-                                           ┌───────┴───────┐
-                                           ▼               ▼
-                                    fact_transactions   dim_*
-                                    (marts)           (SCD2)
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              DATA SOURCES                                    ║
+║                                                                              ║
+║  ┌─────────────────┐   ┌─────────────────┐   ┌──────────────────────────┐  ║
+║  │  PostgreSQL WAL │   │   Stripe SDK     │   │     Stripe Webhooks      │  ║
+║  │  (CDC via       │   │   / REST API     │   │     (payment events)     │  ║
+║  │   Debezium)     │   │                 │   │                          │  ║
+║  └────────┬────────┘   └────────┬────────┘   └────────────┬─────────────┘  ║
+╚═══════════╪════════════════════╪═════════════════════════╪════════════════╝
+            │                   │                          │
+            ▼                   ▼                          ▼
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         INGESTION LAYER — Apache Kafka                       ║
+║                                                                              ║
+║   topic: pg.transactions ◄──────────┐    topic: stripe.events ◄─────────── ║
+║   (CDC stream)                      │    (API / Webhooks)                   ║
+║                              ┌──────┴──────────────────┐                   ║
+║                              │     APACHE KAFKA         │                   ║
+║                              │   (message broker)       │                   ║
+║                              └──────┬──────┬────────────┘                   ║
+╚═════════════════════════════════════╪══════╪════════════════════════════════╝
+                                      │      │
+            ┌─────────────────────────┘      └──────────────────────┐
+            │                                                        │
+            ▼                                                        ▼
+╔═══════════════════════════╗                         ╔═════════════════════════╗
+║   SPEED LAYER             ║                         ║   BATCH LAYER           ║
+║   Apache Flink            ║                         ║   Kafka → S3            ║
+║   (FraudDetectionJob)     ║                         ║   → Snowpipe            ║
+║                           ║                         ║                         ║
+║  • Tumbling window 5 min  ║                         ║  • Raw landing zone     ║
+║  • Velocity features      ║                         ║  • Micro-batches        ║
+║  • Amount z-score         ║                         ║  • Auto-ingest to       ║
+║  • Geo consistency        ║                         ║    Snowflake staging    ║
+║  • p99 latency < 100 ms   ║                         ║                         ║
+╚═══════════╦═══════════════╝                         ╚══════════╦══════════════╝
+            ║                                                    ║
+     ┌──────╨──────┐                                             ▼
+     │             │                               ╔═════════════════════════════╗
+     ▼             ▼                               ║   TRANSFORMATION LAYER      ║
+┌─────────┐  ┌──────────────┐                      ║   Airflow + dbt             ║
+│PostgreSQL│  │  Kafka       │                      ║                             ║
+│(fraud_   │  │  (re-publish │                      ║  ┌─────────────────────┐   ║
+│ score)   │  │   enriched   │                      ║  │ stg_transactions    │   ║
+└─────────┘  │   events)    │                      ║  └──────────┬──────────┘   ║
+             └──────────────┘                      ║             ▼              ║
+                                                   ║  ┌─────────────────────┐   ║
+            ┌──────────────────────────────────────║──│ int_transactions_   │   ║
+            │         Kafka Connect                ║  │     enriched        │   ║
+            │         (MongoDB Sink)               ║  └──────────┬──────────┘   ║
+            ▼                                      ║             ▼              ║
+╔═══════════════════════════╗                      ║  ┌──────────┴──────────┐   ║
+║   MongoDB Atlas            ║                      ║  │                     │   ║
+║                           ║                      ║  ▼                     ▼   ║
+║  ┌─────────────────────┐  ║                      ║ fct_transactions    dim_*  ║
+║  │  fraud_events       │  ║                      ║ (fact table)      (SCD2)   ║
+║  │  (TTL: 90 days)     │  ║                      ╚═════════════════════════════╝
+║  ├─────────────────────┤  ║                                   ║
+║  │  user_sessions      │  ║                                   ▼
+║  │  (clickstream)      │  ║                      ╔═════════════════════════════╗
+║  ├─────────────────────┤  ║                      ║   SERVING LAYER             ║
+║  │  app_logs           │  ║                      ║   Snowflake (OLAP)          ║
+║  │  (TTL: 30 days)     │  ║                      ║                             ║
+║  └─────────────────────┘  ║                      ║  • mv_daily_revenue         ║
+║                           ║                      ║  • RFM segmentation         ║
+║  ── change streams ──►    ║                      ║  • Revenue by region        ║
+╚═══════════╦═══════════════╝                      ║  • Fraud analytics          ║
+            ║                                      ╚═════════════════════════════╝
+            ▼
+╔═══════════════════════════╗
+║   ML LAYER                ║
+║   Feast Feature Store     ║
+║                           ║
+║  online store  ◄── Kafka  ║
+║  offline store ◄── MongoDB║
+║                           ║
+║         ▼                 ║
+║  MLflow Model Registry    ║
+║  (XGBoost fraud model)    ║
+║                           ║
+║         ▼                 ║
+║  FastAPI Serving          ║
+║  (inference < 50 ms)      ║
+║                           ║
+║         ▼                 ║
+║  Evidently AI Monitoring  ║
+║  (drift → retraining DAG) ║
+╚═══════════════════════════╝
 ```
 
 ### Airflow DAG — `stripe_daily_etl`
 
 ```
-extract_postgres  ──► transform_dbt  ──► load_snowflake  ──► notify_success
-      │                    │                   │
-   (30 min)             (45 min)            (15 min)
+  ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+  │  extract_        │     │  transform_      │     │  load_           │     │  notify_         │
+  │  postgres        │────►│  dbt             │────►│  snowflake       │────►│  success         │
+  │                  │     │                  │     │                  │     │                  │
+  │  ~ 30 min        │     │  ~ 45 min        │     │  ~ 15 min        │     │  Slack / PD      │
+  └──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
 ```
 
 - **Schedule:** `0 2 * * *` (02:00 UTC, outside peak traffic)
