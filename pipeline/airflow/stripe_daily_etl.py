@@ -46,4 +46,4 @@ with DAG(
         python_callable=generate_gdpr_report  # function to be defined
     )
 
-    validate_sources >> dbt_run >> dbt_test >> refresh_views >> compliance_report
+    validate_sources >> dbt_run >> dbt_test >> refresh_views >> compliance_report   

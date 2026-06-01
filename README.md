@@ -1,7 +1,6 @@
 # Stripe Business Case — Comprehensive Data Architecture
-
 > **AIA Certification Project | Data Engineering**
-> Lead Data Engineer Senior — Architecture Proposal
+> Data Engineer — Architecture Proposal
 
 ![Architecture](https://img.shields.io/badge/Architecture-Lambda%20Hybrid-blue)
 ![OLTP](https://img.shields.io/badge/OLTP-PostgreSQL%20%2B%20Citus-336791?logo=postgresql)
