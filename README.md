@@ -184,11 +184,9 @@ graph TD
 
 ### Kafka Pipeline Diagram
 
-![Kafka Data Pipeline](Apache%20Kafka%20Data%20Pipeline-2026-05-31-192449.svg)
-
-### Ingestion Diagram
-
-![Data Ingestion](Data%20Ingestion%20and-2026-05-31-192245.svg)
+*Exported diagrams are available in [`docs/`](docs/):*
+- [Architecture Diagram (PNG)](docs/architecture_diagram.png)
+- [Data Ingestion Diagram (PNG)](docs/data_ingestion.png)
 
 ---
 
