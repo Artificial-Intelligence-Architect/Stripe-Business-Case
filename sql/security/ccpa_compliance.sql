@@ -138,8 +138,4 @@ SELECT
     AVG(EXTRACT(EPOCH FROM (completed_date - request_date)) / 3600) AS avg_processing_hours
 FROM ccpa_requests
 GROUP BY 1, 2
-<<<<<<< HEAD
 ORDER BY 1 DESC, 2;
-=======
-ORDER BY 1 DESC, 2;
->>>>>>> f74ac85e4b9154faa2cc9e8f53ae4bedf6923069

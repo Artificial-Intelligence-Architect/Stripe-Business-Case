@@ -1,3 +1,7 @@
-airflow/
+/airflow/
 airflow_venv/
 Enonce-stripe.md
+.venvChatGPTReadme.md
+*.zip
+pipeline/airflow/generate_gdpr_report
+*.bak
