@@ -1,0 +1,77 @@
+---
+title: "Stripe OLTP — Entity Relationship Diagram (PostgreSQL)"
+---
+erDiagram
+
+    %% ── REFERENCE TABLES ────────────────────────────────────
+
+    countries {
+        CHAR2       code        PK
+        VARCHAR100  name
+        VARCHAR50   region
+    }
+
+    currencies {
+        CHAR3       code        PK
+        VARCHAR100  name
+        NUMERIC186  usd_rate
+        TIMESTAMPTZ updated_at
+    }
+
+    %% ── MAIN ENTITIES ────────────────────────────────────────
+
+    merchants {
+        UUID        merchant_id  PK
+        VARCHAR255  name
+        CHAR2       country_code FK
+        VARCHAR20   tier
+        TIMESTAMPTZ created_at
+        BOOLEAN     is_active
+    }
+
+    customers {
+        UUID        customer_id  PK
+        VARCHAR255  email
+        CHAR64      email_hash
+        CHAR2       country_code FK
+        TIMESTAMPTZ created_at
+    }
+
+    %% ── TRANSACTIONS (partitioned by created_at) ─────────────
+
+    transactions {
+        UUID        transaction_id  PK
+        TIMESTAMPTZ created_at      PK  "composite PK — partitioning key"
+        UUID        merchant_id     FK
+        UUID        customer_id     FK
+        CHAR3       currency        FK
+        NUMERIC184  amount
+        NUMERIC184  amount_usd          "converted by trigger"
+        VARCHAR50   payment_method
+        VARCHAR20   status              "pending|success|failed|refunded|chargeback"
+        VARCHAR20   device_type
+        CHAR2       ip_country
+        NUMERIC54   fraud_score         "0.00–1.00 — partial index if > 0.7"
+    }
+
+    %% ── AUDIT LOG (append-only) ──────────────────────────────
+
+    audit_log {
+        BIGSERIAL   log_id      PK
+        VARCHAR50   table_name
+        CHAR1       operation       "I | U | D"
+        UUID        record_id
+        VARCHAR100  changed_by
+        TIMESTAMPTZ changed_at
+        JSONB       old_values
+        JSONB       new_values
+    }
+
+    %% ── RELATIONSHIPS ────────────────────────────────────────
+
+    countries   ||--o{ merchants    : "country_code"
+    countries   ||--o{ customers    : "country_code"
+    currencies  ||--o{ transactions : "currency"
+    merchants   ||--o{ transactions : "merchant_id"
+    customers   ||--o{ transactions : "customer_id"
+    transactions ||--o{ audit_log   : "triggers → record_id"

@@ -71,7 +71,7 @@ Stripe-Business-Case/
 │   │       └── transactions.csv
 │   ├── sample_data/
 │   │   ├── fraud_events.json
-│   │   └── transactions.csv
+
 │   └── screenshots/
 │       ├── airflow_dag_grid_run.png
 │       ├── airflow_graph_run.png
@@ -159,6 +159,78 @@ Stripe-Business-Case/
 **Justification:** PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by `merchant_id` without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
 
 **Discarded alternative:** CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
+
+### ERD — OLTP System
+
+```mermaid
+---
+title: "Stripe OLTP — Entity Relationship Diagram (PostgreSQL)"
+---
+erDiagram
+
+    countries {
+        CHAR2       code        PK
+        VARCHAR100  name
+        VARCHAR50   region
+    }
+
+    currencies {
+        CHAR3       code        PK
+        VARCHAR100  name
+        NUMERIC186  usd_rate
+        TIMESTAMPTZ updated_at
+    }
+
+    merchants {
+        UUID        merchant_id  PK
+        VARCHAR255  name
+        CHAR2       country_code FK
+        VARCHAR20   tier
+        TIMESTAMPTZ created_at
+        BOOLEAN     is_active
+    }
+
+    customers {
+        UUID        customer_id  PK
+        VARCHAR255  email
+        CHAR64      email_hash
+        CHAR2       country_code FK
+        TIMESTAMPTZ created_at
+    }
+
+    transactions {
+        UUID        transaction_id  PK
+        TIMESTAMPTZ created_at      PK
+        UUID        merchant_id     FK
+        UUID        customer_id     FK
+        CHAR3       currency        FK
+        NUMERIC184  amount
+        NUMERIC184  amount_usd
+        VARCHAR50   payment_method
+        VARCHAR20   status
+        VARCHAR20   device_type
+        CHAR2       ip_country
+        NUMERIC54   fraud_score
+    }
+
+    audit_log {
+        BIGSERIAL   log_id      PK
+        VARCHAR50   table_name
+        CHAR1       operation
+        UUID        record_id
+        VARCHAR100  changed_by
+        TIMESTAMPTZ changed_at
+        JSONB       old_values
+        JSONB       new_values
+    }
+
+    countries   ||--o{ merchants    : "country_code"
+    countries   ||--o{ customers    : "country_code"
+    currencies  ||--o{ transactions : "currency"
+    merchants   ||--o{ transactions : "merchant_id"
+    customers   ||--o{ transactions : "customer_id"
+    transactions ||--o{ audit_log   : "triggers"
+` ` `
 
 ### Simplified ERD
 

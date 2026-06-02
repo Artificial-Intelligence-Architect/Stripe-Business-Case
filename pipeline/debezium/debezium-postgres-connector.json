@@ -1,0 +1,60 @@
+{
+  "name": "stripe-postgres-connector",
+  "config": {
+
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+
+    "_comment_source": "── PostgreSQL source ──────────────────────────────────────",
+    "database.hostname": "${env:PG_HOST}",
+    "database.port": "5432",
+    "database.user": "${env:PG_CDC_USER}",
+    "database.password": "${env:PG_CDC_PASSWORD}",
+    "database.dbname": "stripe",
+    "database.server.name": "pg",
+
+    "_comment_wal": "── WAL / logical replication ──────────────────────────────",
+    "plugin.name": "pgoutput",
+    "publication.name": "stripe_cdc_pub",
+    "slot.name": "stripe_debezium_slot",
+    "slot.drop.on.stop": "false",
+
+    "_comment_tables": "── Tables to capture ──────────────────────────────────────",
+    "table.include.list": "public.transactions,public.merchants,public.customers",
+
+    "_comment_topics": "── Kafka topic routing ────────────────────────────────────",
+    "topic.prefix": "pg",
+    "topic.creation.enable": "true",
+    "topic.creation.default.replication.factor": "3",
+    "topic.creation.default.partitions": "6",
+
+    "_comment_transforms": "── SMT — strip PII before reaching Kafka ──────────────────",
+    "transforms": "maskEmail,dropIpCountry",
+
+    "transforms.maskEmail.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
+    "transforms.maskEmail.blacklist": "email",
+
+    "transforms.dropIpCountry.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
+    "transforms.dropIpCountry.blacklist": "ip_country",
+
+    "_comment_serialization": "── Serialization ──────────────────────────────────────────",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "${env:SCHEMA_REGISTRY_URL}",
+
+    "_comment_snapshot": "── Initial snapshot strategy ──────────────────────────────",
+    "snapshot.mode": "initial",
+    "snapshot.isolation.mode": "repeatable_read",
+    "snapshot.fetch.size": "10240",
+
+    "_comment_perf": "── Performance & reliability ──────────────────────────────",
+    "max.batch.size": "4096",
+    "max.queue.size": "16384",
+    "poll.interval.ms": "100",
+    "heartbeat.interval.ms": "10000",
+    "errors.tolerance": "none",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+  }
+}

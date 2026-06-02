@@ -125,7 +125,8 @@ with DAG(
 
     refresh_views = SnowflakeOperator(
         task_id="refresh_views",
-        sql="ALTER MATERIALIZED VIEW mv_daily_revenue REFRESH",
+        sql="ALTER DYNAMIC TABLE mv_daily_revenue REFRESH;
+ALTER DYNAMIC TABLE mv_customer_monthly REFRESH;",
         snowflake_conn_id="snowflake_prod",
     )
 
