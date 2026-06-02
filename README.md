@@ -1,16 +1,13 @@
 # Stripe Business Case — Comprehensive Data Architecture
-> **AIA Certification Project | Data Engineering**
+> **AIA Certification Project | Data Engineering**  
 > Data Engineer — Architecture Proposal
 
 ![Architecture](https://img.shields.io/badge/Architecture-Lambda%20Hybrid-blue)
 ![OLTP](https://img.shields.io/badge/OLTP-PostgreSQL%20%2B%20Citus-336791?logo=postgresql)
 ![OLAP](https://img.shields.io/badge/OLAP-Snowflake-29B5E8?logo=snowflake)
 ![NoSQL](https://img.shields.io/badge/NoSQL-MongoDB%20Atlas-47A248?logo=mongodb)
-
 ![Pipeline](https://img.shields.io/badge/Pipeline-Kafka%20%7C%20Flink%20%7C%20Airflow%20%7C%20dbt-FF6F00)
-
 ![ML](https://img.shields.io/badge/ML-Feast%20%7C%20MLflow%20%7C%20FastAPI-blueviolet)
-
 ![Compliance](https://img.shields.io/badge/Compliance-GDPR%20%7C%20PCI--DSS-critical)
 ![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-brightgreen)
 ![PCI-DSS Certified](https://img.shields.io/badge/PCI--DSS-Certified-blue)
@@ -64,6 +61,7 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 ---
 
 ## 2. Repository Structure
+
 ```text
 Stripe-Business-Case/
 ├── demo/
@@ -126,98 +124,32 @@ Stripe-Business-Case/
 ├── Enonce-stripe.md
 ├── LICENSE
 └── README.md
-```
----
 
-## 3. Architecture Overview
+3. Architecture Overview
+Paradigm: Hybrid Lambda
+Layer	        Components	                                            Target Latency
+Speed layer	    Kafka + Flink (real-time streaming)	                    < 100 ms
+Batch layer	    Airflow + dbt (H+1 / D+1 reprocessing)	                Minutes to hours
+Serving layer	Snowflake (OLAP) + MongoDB (NoSQL) + PostgreSQL (OLTP)	< 1 s
 
-### Paradigm: Hybrid Lambda
+An exported PNG version is available in docs/architecture_diagram.png.
+Global Diagram
 
-| Layer             | Components                                                | Target Latency    |
-|-------------------|-----------------------------------------------------------|-------------------|
-| **Speed layer**   | Kafka + Flink (real-time streaming)                       | < 100 ms          |
-| **Batch layer**   | Airflow + dbt (H+1 / D+1 reprocessing)                    | Minutes to hours  |
-| **Serving layer** | Snowflake (OLAP) + MongoDB (NoSQL) + PostgreSQL (OLTP)    | < 1 s             |
+    Exported diagrams are available in docs/:
 
-*An exported PNG version is available in [`docs/architecture_diagram.png`](docs/architecture_diagram.png).*
+        Architecture Diagram (PNG)
 
-### Global Diagram
+        Data Ingestion Diagram (PNG)
 
-```mermaid
-graph TD
-    subgraph Sources
-        A1[Stripe API]
-        A2[Mobile/Web SDK]
-        A3[Webhooks]
-    end
+4. OLTP Model — PostgreSQL
+Technology Choice: PostgreSQL + Citus
 
-    subgraph Ingestion
-        B[Apache Kafka]
-    end
+Justification: PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by merchant_id without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
 
-    subgraph Storage
-        C1[(PostgreSQL + Citus)]
-        C2[(MongoDB Atlas)]
-        C3[(Snowflake)]
-    end
+Discarded alternative: CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
+Simplified ERD
+text
 
-    subgraph Processing
-        D1[Apache Flink]
-        D2[Airflow + dbt]
-        D3[FastAPI]
-    end
-
-    subgraph ML
-        E1[Feast Feature Store]
-        E2[MLflow Model Registry]
-    end
-
-    subgraph Security
-        F1[Okta / RBAC]
-        F2[AWS KMS]
-    end
-
-    A1 & A2 & A3 --> B
-    B --> C1
-    B --> C2
-    C1 -->|Debezium CDC| B
-    B --> D1
-    D1 --> C2
-    D1 --> C3
-    B --> D2
-    D2 --> C3
-    D2 --> C2
-    C2 --> E1
-    E1 --> E2
-    E2 --> D3
-    D3 -->|Real-time Score| C1
-    D3 -->|Events| B
-    C1 -.- F1
-    C3 -.- F1
-    C2 -.- F1
-    C1 -.- F2
-    C3 -.- F2
-    C2 -.- F2
-
-# Kafka Pipeline Diagram
-
-Exported diagrams are available in docs/:
-
-   - Architecture Diagram (PNG)(https://docs/architecture_diagram.png)
-
-   - Data Ingestion Diagram (PNG) (https://docs/data_ingestion.png)*   
-
----
-
-### 4. OLTP Model — PostgreSQL
-#### Technology Choice: PostgreSQL + Citus
-
-**Justification:** PostgreSQL guarantees full ACID compliance (atomicity, consistency, serialisable isolation, durability via WAL). The Citus extension enables horizontal sharding by merchant_id without any changes to application code, achieving a throughput of 10,000 TPS per node with linear scale-out. Native logical replication feeds Debezium for CDC to Kafka with latency below 500 ms.
-
-**Discarded alternative:** CockroachDB — inter-node network overhead too high for sub-10 ms transactions; lower operational maturity than PostgreSQL (20+ years in production at scale).
-
-#### Simplified ERD
-```text
 ┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
 │   customers     │       │   transactions   │       │   merchants     │
 ├─────────────────┤       ├──────────────────┤       ├─────────────────┤
@@ -241,7 +173,9 @@ Exported diagrams are available in docs/:
                                                      │    changed_at   │
                                                      └─────────────────┘
 
-#### SQL Schema (Extract)
+SQL Schema (Extract)
+sql
+
 CREATE TABLE transactions (
     transaction_id  UUID         NOT NULL DEFAULT gen_random_uuid(),
     merchant_id     UUID         NOT NULL REFERENCES merchants(merchant_id),
@@ -276,23 +210,22 @@ CREATE INDEX CONCURRENTLY idx_transactions_pending
 
     Full DDL, indices, and audit triggers available in sql/oltp/schema.sql
 
-#### OLTP Performance Strategies
-| Technique	              | Implementation	                        | Benefit
-| Range partitioning	  | Monthly by created_at	                | Partition pruning, simplified archiving
-| Partial indices	      | WHERE fraud_score > 0.7	                | 80% reduction in index size
-| Connection pooling	  | PgBouncer (transaction mode)            | Supports 10,000+ concurrent connections
-| Citus sharding	      | merchant_id as distribution key	        | Linear scale-out
-| Synchronous replication |	1 primary + 2 replicas (quorum write)   | RPO = 0
-
----
-### 5. OLAP Model — Star Schema
+OLTP Performance Strategies
+Technique	Implementation	Benefit
+Range partitioning	Monthly by created_at	Partition pruning, simplified archiving
+Partial indices	WHERE fraud_score > 0.7	80% reduction in index size
+Connection pooling	PgBouncer (transaction mode)	Supports 10,000+ concurrent connections
+Citus sharding	merchant_id as distribution key	Linear scale-out
+Synchronous replication	1 primary + 2 replicas (quorum write)	RPO = 0
+5. OLAP Model — Star Schema
 Technology Choice: Snowflake
 
-**Justification:** Compute/storage separation allows compute warehouses to scale independently without interruption. Time Travel (90 days) supports audit compliance and reprocessing in the event of errors. Automatic clustering on date_sk and merchant_sk eliminates costly sort operations on large fact tables. Native dbt connectors with atomic MERGE operations support SCD processing.
+Justification: Compute/storage separation allows compute warehouses to scale independently without interruption. Time Travel (90 days) supports audit compliance and reprocessing in the event of errors. Automatic clustering on date_sk and merchant_sk eliminates costly sort operations on large fact tables. Native dbt connectors with atomic MERGE operations support SCD processing.
 
-**Discarded alternative:** Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
+Discarded alternative: Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
+Star Schema
+text
 
-#### Star Schema
                     ┌─────────────────┐
                     │   dim_date      │
                     ├─────────────────┤
@@ -308,26 +241,29 @@ Technology Choice: Snowflake
 ├─────────────────┤          │          ├─────────────────┤
 │ PK customer_sk  │          │          │ PK merchant_sk  │
 │    customer_id  │          │          │    merchant_id  │
-│    segment      │    ┌─────┴──────-┐  │    name         │
-│    country      │────│    fact_    │──│    region       │
-│    tier         │    │transactions │  │    category     │
-│    valid_from   │    ├────────────-┤  │    risk_level   │
-│    valid_to     │    │ PK tx_sk    │  │    valid_from   │
-│    is_current   │    │  date_sk    │  │    valid_to     │
-└─────────────────┘    │  merchant_sk│  │    is_current   │
-                       │  customer_sk│  └─────────────────┘
+│    segment      │    ┌─────┴──────┐   │    name         │
+│    country      │────│    fact_   │───│    region       │
+│    tier         │    │transactions│   │    category     │
+│    valid_from   │    ├────────────┤   │    risk_level   │
+│    valid_to     │    │ PK tx_sk   │   │    valid_from   │
+│    is_current   │    │  date_sk   │   │    valid_to     │
+└─────────────────┘    │  merchant_sk│   │    is_current   │
+                       │  customer_sk│   └─────────────────┘
 ┌─────────────────┐    │  currency_sk│
-│  dim_currency   │    │  amount_usd │  ┌─────────────────┐
-├─────────────────┤    │  status     │  │  dim_payment    │
-│ PK currency_sk  │────│  is_fraud   │──│  _method        │
-│    code         │    │  fraud_score│  ├─────────────────┤
-│    rate_usd     │    │  device_type│  │ PK method_sk    │
-│    valid_from   │    │  ip_country │  │    method_name  │
-└─────────────────┘    └─────────────┘  │    category     │
+│  dim_currency   │    │  amount_usd │   ┌─────────────────┐
+├─────────────────┤    │  status     │   │  dim_payment    │
+│ PK currency_sk  │────│  is_fraud   │───│  _method        │
+│    code         │    │  fraud_score│   ├─────────────────┤
+│    rate_usd     │    │  device_type│   │ PK method_sk    │
+│    valid_from   │    │  ip_country │   │    method_name  │
+└─────────────────┘    └─────────────┘   │    category     │
                                         └─────────────────┘
+
     SCD Type 2 implemented on dim_customer and dim_merchant for full change historisation.
 
-#### Materialised View (Extract)
+Materialised View (Extract)
+sql
+
 CREATE OR REPLACE VIEW mv_daily_revenue AS
 SELECT
     d.full_date,
@@ -343,25 +279,29 @@ JOIN dim_date     d ON f.date_sk     = d.date_sk
 JOIN dim_merchant m ON f.merchant_sk = m.merchant_sk
 WHERE m.is_current = true
 GROUP BY 1, 2, 3;
+
     Full schema and DDLs in sql/olap/schema.sql
 
-# dbt Models
+dbt Models
+text
+
 stg_transactions                   → Cleaning, casting, deduplication
     └── int_transactions_enriched  → Enrichment (currency, geolocation, segment)
             ├── fct_transactions   → Main fact table
             ├── dim_customer       → SCD Type 2
             └── dim_merchant       → SCD Type 2
-'''
----
-### 6. NoSQL Model — MongoDB
-# Technology Choice: MongoDB Atlas
 
-**Justification:** The aggregation pipeline enables complex transformations in a single network round-trip, which is critical for real-time ML features. Integrated Atlas Search (Lucene) removes the need for a separate Elasticsearch cluster. Change streams provide a clean replacement for Debezium when synchronising MongoDB to Kafka. Automatic sharding on merchant_id ensures an even data distribution.
+6. NoSQL Model — MongoDB
+Technology Choice: MongoDB Atlas
 
-**Discarded alternative:** Apache Cassandra — excellent for high-frequency writes, but limited aggregation capabilities, no flexible schema, and complex ML integration.
+Justification: The aggregation pipeline enables complex transformations in a single network round-trip, which is critical for real-time ML features. Integrated Atlas Search (Lucene) removes the need for a separate Elasticsearch cluster. Change streams provide a clean replacement for Debezium when synchronising MongoDB to Kafka. Automatic sharding on merchant_id ensures an even data distribution.
 
-# Main Collections
-fraud_events                                                    
+Discarded alternative: Apache Cassandra — excellent for high-frequency writes, but limited aggregation capabilities, no flexible schema, and complex ML integration.
+Main Collections
+
+fraud_events
+json
+
 {
   "_id": "ObjectId",
   "transaction_id": "uuid",
@@ -383,7 +323,9 @@ fraud_events
   "ttl_expires_at": "ISODate"
 }
 
-# user_sessions
+user_sessions
+json
+
 {
   "_id": "ObjectId",
   "session_id": "uuid",
@@ -397,7 +339,10 @@ fraud_events
   "converted": true,
   "funnel_stage": "payment_success"
 }
-# app_logs
+
+app_logs
+json
+
 {
   "_id": "ObjectId",
   "level": "ERROR",
@@ -407,19 +352,20 @@ fraud_events
   "created_at": "ISODate"
 }
 
-# Index Strategy
-| Collection	| Index	                   | Type	        | Justification                 |
-| fraud_events	| {merchant_id, timestamp} | Compound	    | Top at-risk merchant queries  |
-| fraud_events	| {fraud_signals.score}	   | Single field	| Fast threshold filtering      |
-| fraud_events	| {ttl_expires_at}	       | TTL (90 days)	| Automatic GDPR purge          |
-| user_sessions	| {customer_id, started_at}| Compound	    | Customer journey analysis     |
-| app_logs	    | {created_at}	           | TTL (30 days)	| Automatic log rotation        |
+Index Strategy
+Collection	Index	Type	Justification
+fraud_events	{merchant_id, timestamp}	Compound	Top at-risk merchant queries
+fraud_events	{fraud_signals.score}	Single field	Fast threshold filtering
+fraud_events	{ttl_expires_at}	TTL (90 days)	Automatic GDPR purge
+user_sessions	{customer_id, started_at}	Compound	Customer journey analysis
+app_logs	{created_at}	TTL (30 days)	Automatic log rotation
 
     Full JSON schemas and indices in nosql/mongodb/
-'''
----
-### 7. Data Pipeline
-# Data Flow
+
+7. Data Pipeline
+Data Flow
+text
+
 PostgreSQL WAL ──► Debezium ──► Kafka (topic: pg.transactions)
 SDK / API       ──────────────► Kafka (topic: stripe.events)
                                     │
@@ -440,44 +386,46 @@ SDK / API       ──────────────► Kafka (topic: stri
                                     fact_transactions   dim_*
                                     (marts)           (SCD2)
 
+Airflow DAG — stripe_daily_etl
+text
 
-# Airflow DAG — stripe_daily_etl
 extract_postgres  ──► transform_dbt  ──► load_snowflake  ──► notify_success
       │                    │                   │
    (30 min)             (45 min)            (15 min)
-   - Schedule: 0 2 * * * (02:00 UTC, outside peak traffic)
 
-   - SLA: Previous day's data available before 06:00 UTC
+    Schedule: 0 2 * * * (02:00 UTC, outside peak traffic)
 
-   - Retry: 3 attempts, exponential back-off (5 min, 15 min, 45 min)
+    SLA: Previous day's data available before 06:00 UTC
 
-   - Alerting: Slack + PagerDuty on failure after 3 attempts
+    Retry: 3 attempts, exponential back-off (5 min, 15 min, 45 min)
 
-# Flink — FraudDetectionJob
+    Alerting: Slack + PagerDuty on failure after 3 attempts
 
-   - Time window: Tumbling window of 5 minutes per merchant_id
+Flink — FraudDetectionJob
 
-   - Computed features: Velocity, amount z-score, geographical consistency
+    Time window: Tumbling window of 5 minutes per merchant_id
 
-   - End-to-end latency: < 100 ms (measured p99)
+    Computed features: Velocity, amount z-score, geographical consistency
 
-   - Back-pressure: Handled natively by Flink; no message loss
+    End-to-end latency: < 100 ms (measured p99)
 
-    Full DAG in pipeline/airflow/stripe_daily_etl.py (https://pipeline/airflow/stripe_daily_etl.py)
-    Flink job in pipeline/flink/FraudDetectionJob.java (https://pipeline/flink/FraudDetectionJob.java)  
-'''
----
-### 8. Security & Compliance
-# Security Matrix
-| Layer	    | Measure	            | Implementation                                | 
-| Transport	| Mandatory TLS 1.3	    | Nginx / Kafka SSL, auto-renewed certificates  |
-| Storage	| AES-256 at rest	    | AWS KMS (monthly key rotation)                |
-| Access	| RBAC + MFA	        | Okta SSO, principle of least privilege        |
-| Audit	    | Immutable logging	    | PostgreSQL audit_log table + AWS CloudTrail   |
-| PCI-DSS	| PAN tokenisation	    | Stripe Vault — no PAN stored in plain text    |
-| GDPR	    | Automated erasure	    | gdpr_erasure.sql procedure (anonymisation)    |
+    Back-pressure: Handled natively by Flink; no message loss
 
-# RBAC Roles (Extract)
+    Full DAG in pipeline/airflow/stripe_daily_etl.py
+    Flink job in pipeline/flink/FraudDetectionJob.java
+
+8. Security & Compliance
+Security Matrix
+Layer	Measure	Implementation
+Transport	Mandatory TLS 1.3	Nginx / Kafka SSL, auto-renewed certificates
+Storage	AES-256 at rest	AWS KMS (monthly key rotation)
+Access	RBAC + MFA	Okta SSO, principle of least privilege
+Audit	Immutable logging	PostgreSQL audit_log table + AWS CloudTrail
+PCI-DSS	PAN tokenisation	Stripe Vault — no PAN stored in plain text
+GDPR	Automated erasure	gdpr_erasure.sql procedure (anonymisation)
+RBAC Roles (Extract)
+sql
+
 -- Read-only role for analysts
 CREATE ROLE analyst_readonly;
 GRANT SELECT ON fact_transactions, dim_customer, dim_merchant TO analyst_readonly;
@@ -487,7 +435,9 @@ REVOKE SELECT ON audit_log FROM analyst_readonly;
 CREATE ROLE ml_engineer;
 GRANT SELECT ON fraud_events_anonymized TO ml_engineer;
 
-# GDPR — Right-to-Erasure Procedure
+GDPR — Right-to-Erasure Procedure
+sql
+
 -- Irreversible anonymisation (aggregates retained for accounting compliance)
 UPDATE customers
 SET email      = 'deleted_' || customer_id || '@anonymized.stripe.com',
@@ -496,21 +446,22 @@ SET email      = 'deleted_' || customer_id || '@anonymized.stripe.com',
     deleted_at = now()
 WHERE customer_id = $1;
 
- - CCPA compliance                                  (sql/security/ccpa_compliance.sql))
- - Full RBAC scripts in sql/security/rbac_setup.sql (https://sql/security/rbac_setup.sql)
- - GDPR procedure in sql/security/gdpr_erasure.sql  (https://sql/security/gdpr_erasure.sql)
+    CCPA compliance
 
-'''
----
-### 9. Machine Learning Integration
-# ML Models in Production
-|   Model               |   Algorithm	        |   Metric	        |Business Impact            |
-|Fraud Detection	    |   XGBoost	            |AUC 0.93, < 100ms	|-40% fraud ($15M/year)     |
-|Churn Prediction	    |   LightGBM	        |AUC 0.87	        |+12% retention ($25M/year) |
-|Customer LTV	        |   XGBoost Regressor	|R² 0.82	        |Marketing optimisation     |
-|Customer Segmentation	|   K-Means	            |8 clusters	        |+15% conversion            |
+    Full RBAC scripts
 
-# ML Architecture
+    GDPR procedure
+
+9. Machine Learning Integration
+ML Models in Production
+Model	Algorithm	Metric	Business Impact
+Fraud Detection	XGBoost	AUC 0.93, < 100 ms	-40% fraud ($15M/year)
+Churn Prediction	LightGBM	AUC 0.87	+12% retention ($25M/year)
+Customer LTV	XGBoost Regressor	R² 0.82	Marketing optimisation
+Customer Segmentation	K-Means	8 clusters	+15% conversion
+ML Architecture
+text
+
 MongoDB (fraud_events)  ──►  Feast Feature Store  ──►  MLflow Training
 Kafka (streaming)       ──►  (online + offline)   ──►  (XGBoost, 90-day data)
                                                               │
@@ -522,29 +473,29 @@ Kafka (streaming)       ──►  (online + offline)   ──►  (XGBoost, 90-
                                                     Evidently AI Monitoring
                                                     (drift → retraining)
 
-# Feature Engineering
-Features are built across two layers:
-| Feature	                    | Type	        |Source	               |  Window              |   
-| velocity_1h	                | Numeric	    |Kafka / Flink	       |  Rolling 1 hour      | 
-| amount_zscore	                | Numeric	    |PostgreSQL	           |  30-day per merchant | 
-| ip_country_match	            | Boolean	    |PostgreSQL	           |  Current transaction | 
-| device_fingerprint_match	    | Boolean	    |MongoDB sessions	   |  Current session     |  
-| customer_avg_amount_30d	    | Numeric	    |Snowflake	Rolling    |  30 days             | 
-| merchant_fraud_rate_7d	    | Numeric	    |MongoDB fraud_events  | Rolling 7 days       | 
+Feature Engineering
+Feature	Type	Source	Window
+velocity_1h	Numeric	Kafka / Flink	Rolling 1 hour
+amount_zscore	Numeric	PostgreSQL	30-day per merchant
+ip_country_match	Boolean	PostgreSQL	Current transaction
+device_fingerprint_match	Boolean	MongoDB sessions	Current session
+customer_avg_amount_30d	Numeric	Snowflake	Rolling 30 days
+merchant_fraud_rate_7d	Numeric	MongoDB fraud_events	Rolling 7 days
+Model Monitoring — Evidently AI
 
-# Model Monitoring — Evidently AI
-    - Drift detection: Jensen-Shannon divergence on numerical features (threshold 0.1)
+    Drift detection: Jensen-Shannon divergence on numerical features (threshold 0.1)
 
-    - Alert: Drift detected → automatic JIRA ticket + retraining triggered via Airflow DAG
+    Alert: Drift detected → automatic JIRA ticket + retraining triggered via Airflow DAG
 
-    - HTML report: demo/screenshots/evidently_report.html (https://demo/screenshots/evidently_report.html)
+    HTML report: demo/screenshots/evidently_report.html
 
-    Full code in ml/feature_engineering.py (https://ml/feature_engineering.py)
-    Monitoring code in ml/model_monitoring.py (https://ml/model_monitoring.py)
-'''
----
-### 10. SQL & NoSQL Queries
-# OLAP — RFM Customer Segmentation (Snowflake)    
+    Full code in ml/feature_engineering.py
+    Monitoring code in ml/model_monitoring.py
+
+10. SQL & NoSQL Queries
+OLAP — RFM Customer Segmentation (Snowflake)
+sql
+
 WITH rfm_raw AS (
     SELECT
         customer_sk,
@@ -577,7 +528,9 @@ SELECT
     END AS segment_label
 FROM rfm_scored;
 
-# OLAP — Revenue by Region and Payment Method
+OLAP — Revenue by Region and Payment Method
+sql
+
 SELECT
     m.region,
     p.method_name,
@@ -595,7 +548,9 @@ WHERE m.is_current = true
 GROUP BY 1, 2, 3, 4
 ORDER BY revenue_usd DESC;
 
-# NoSQL — Top 10 At-Risk Merchants (MongoDB)
+NoSQL — Top 10 At-Risk Merchants (MongoDB)
+javascript
+
 db.fraud_events.aggregate([
   {
     $match: {
@@ -622,9 +577,11 @@ db.fraud_events.aggregate([
       as: "merchant_info"
     }
   }
-])
+]);
 
-# OLTP — Abnormal Velocity Detection (PostgreSQL)
+OLTP — Abnormal Velocity Detection (PostgreSQL)
+sql
+
 WITH tx_velocity AS (
     SELECT
         customer_id,
@@ -646,86 +603,76 @@ WHERE v.tx_count_1h > 10
    OR v.amount_1h > 5000
 GROUP BY 1, 2, 3
 ORDER BY v.amount_1h DESC;
-'''
----
-### 11. Technology Choices & Justifications
-|Component	            |Choice	            |Discarded Alternative	    |Justification                                                                              |     
-|OLTP	                |PostgreSQL + Citus	|CockroachDB	            |ACID maturity (25 years), non-intrusive Citus, native logical replication for CDC          |     
-|OLAP	                |Snowflake	        |Amazon Redshift         	|Compute/storage separation, 90-day Time Travel, automatic clustering, dbt-native           |     
-|NoSQL	                |MongoDB Atlas	    |Apache Cassandra	        |Native aggregation pipeline, integrated Atlas Search, change streams, flexible sharding    | 
-|CDC	                |Debezium	        |AWS DMS	                |Open source, < 500 ms latency, native PostgreSQL WAL support, zero data loss               |  
-|Streaming	            |Kafka + Flink	    |AWS Kinesis	            |Flink: stateful windows, < 100 ms latency, native back-pressure; Kafka: mature ecosystem   |
-|Orchestration	        |Apache Airflow	    |Prefect	                |Mature ecosystem, DAG UI, native integrations (dbt, Spark, Snowflake)                      |
-|Feature Store	        |Feast	            |Tecton	                    |Open source, multi-cloud, unified online/offline store, native Kafka integration           |
-|ML Tracking	        |MLflow	            |Weights & Biases	        |Open source, on-premise deployable (PCI-DSS compliance)                                    |
-|ML Monitoring	        |Evidently AI	    |Arize AI	                |Open source, automatic HTML reports, straightforward Airflow integration                   |
-'''
----
-### 12. Performance & Metrics
-# Production Latencies
-| Metric	            |Target	            | Description              |
-| OLTP (PostgreSQL)	    |< 30ms (P95)	    | Transaction processing   |
-| ML Fraud Detection	|< 100ms (P95)	    | Real-time inference      |
-| Kafka CDC	            |< 1s (end-to-end)	| Change Data Capture      |
-| Snowflake Queries	    |< 5s	            | Complex analytics        |
-| Availability	        |99.99%	            | 52 min downtime/year max |
 
-# Throughput
-| System	    | Capacity               |
-| PostgreSQL	| 10,000+ TPS            |
-| MongoDB	    | 100M+ events/day       |
-| Kafka	        | 2M+ messages/sec       |
-| Snowflake	    | 50,000+ queries/day    |
+11. Technology Choices & Justifications
+Component	Choice	Discarded Alternative	Justification
+OLTP	PostgreSQL + Citus	CockroachDB	ACID maturity (25 years), non-intrusive Citus, native logical replication for CDC
+OLAP	Snowflake	Amazon Redshift	Compute/storage separation, 90-day Time Travel, automatic clustering, dbt-native
+NoSQL	MongoDB Atlas	Apache Cassandra	Native aggregation pipeline, integrated Atlas Search, change streams, flexible sharding
+CDC	Debezium	AWS DMS	Open source, < 500 ms latency, native PostgreSQL WAL support, zero data loss
+Streaming	Kafka + Flink	AWS Kinesis	Flink: stateful windows, < 100 ms latency, native back-pressure; Kafka: mature ecosystem
+Orchestration	Apache Airflow	Prefect	Mature ecosystem, DAG UI, native integrations (dbt, Spark, Snowflake)
+Feature Store	Feast	Tecton	Open source, multi-cloud, unified online/offline store, native Kafka integration
+ML Tracking	MLflow	Weights & Biases	Open source, on-premise deployable (PCI-DSS compliance)
+ML Monitoring	Evidently AI	Arize AI	Open source, automatic HTML reports, straightforward Airflow integration
+12. Performance & Metrics
+Production Latencies
+Metric	Target	Description
+OLTP (PostgreSQL)	< 30 ms (P95)	Transaction processing
+ML Fraud Detection	< 100 ms (P95)	Real-time inference
+Kafka CDC	< 1 s (end-to-end)	Change Data Capture
+Snowflake Queries	< 5 s	Complex analytics
+Availability	99.99%	52 min downtime/year max
+Throughput
+System	Capacity
+PostgreSQL	10,000+ TPS
+MongoDB	100M+ events/day
+Kafka	2M+ messages/sec
+Snowflake	50,000+ queries/day
+Compliance Scores
+Regulation	Score	Status
+GDPR	98%	DPO designated, DPIA completed
+PCI-DSS L1	100%	QSA certified, no PAN storage
+CCPA	95%	Data disclosure portal active
+SOC 2 Type II	95%	Annual audit
+Business ROI
+Area	Annual Impact
+Fraud reduction (-40%)	$15M
+Conversion improvement (+5%)	$50M
+Retention improvement (+12%)	$25M
+Infrastructure optimisation (-30%)	$10M
+Total Gains	$100M/year
+Investment	Cost
+Infrastructure (2 years)	$276K
+Engineering team (10 FTE × 2y)	$4M
+Tools, audits, misc	$300K
+Total Investment	$4.6M
+ROI Metric	Value
+ROI	2,078%
+Payback Period	16 days
+13. Proof of Functionality
+Airflow — DAG Executed Successfully
+Screenshot	Description
+demo/screenshots/airflow_dag_grid_run.png	Grid view: 4/4 tasks successful (green)
+demo/screenshots/airflow_graph_run.png	Pipeline graph view
+SQL — Fraud Detection Query
 
-# Compliance Scores
-| Regulation  	| Score	    | Status                          | 
-| GDPR	        | 98%	    | DPO designated, DPIA completed  | 
-| PCI-DSS L1	| 100%	    | QSA certified, no PAN storage   | 
-| CCPA	        | 95%	    | Data disclosure portal active   | 
-| SOC 2 Type II	| 95%	    | Annual audit                    | 
+https://demo/screenshots/sql_query_result.png
+ML Monitoring — Evidently AI Report
 
-# Business ROI
-| Area	                                | Annual Impact |   
-| Fraud reduction (-40%)	            | $15M          |     
-| Conversion improvement (+5%)	        | $50M          |     
-| Retention improvement (+12%)	        | $25M          |     
-| Infrastructure optimisation (-30%)	| $10M          |     
-| Total Gains	                        | $100M/year    |    
-| Investment	                        | Cost          | 
-| Infrastructure (2 years)	            | $276K         | 
-| Engineering team (10 FTE × 2y)	    | $4M           | 
-| Tools, audits, misc	                | $300K         |     
-| Total Investment	                    | $4.6M         |     
-| ROI Metric	                        | Value         |      
-| ROI	                                | 2,078%        | 
-| Payback Period	                    | 16 days       | 
-'''
----
-### 13. Proof of Functionality
-# Airflow — DAG Executed Successfully
-| Screenshot	                                        | Description                             | 
-| https://demo/screenshots/airflow_dag_grid_run.png	    | Grid view: 4/4 tasks successful (green) | 
-| https://demo/screenshots/airflow_graph_run.png	    | Pipeline graph view                     | 
+Interactive report available: demo/screenshots/evidently_report.html
+14. Local Setup & Quick Start
+Prerequisites
 
-# SQL — Fraud Detection Query
+    Docker & Docker Compose >= 2.0
 
-https://demo/screenshots/sql_query_result.png (https://demo/screenshots/sql_query_result.png)
+    Python >= 3.10
 
-# ML Monitoring — Evidently AI Report
+    Java >= 17 (for the Flink job)
 
-    Interactive report available: demo/screenshots/evidently_report.html (https://demo/screenshots/evidently_report.html)
-'''
----
-### 14. Local Setup & Quick Start
-# Prerequisites
+Quick Start
+bash
 
-   - Docker & Docker Compose >= 2.0
-
-   - Python >= 3.10
-
-   - Java >= 17 (for the Flink job)
-
-# Quick Start
 # Clone the repository
 git clone https://github.com/Artificial-Intelligence-Architect/Stripe-Business-Case.git
 cd Stripe-Business-Case
@@ -734,5 +681,42 @@ cd Stripe-Business-Case
 cd demo/local_setup
 docker-compose up -d
 
-# Load the test data
-psql -h localhost -U   
+# Load test data into PostgreSQL
+psql -h localhost -U postgres -d stripe -f ../../sql/oltp/schema.sql
+psql -h localhost -U postgres -d stripe -c "\copy transactions FROM 'sample_data/transactions.csv' CSV HEADER"
+
+# (Optional) Run Airflow locally
+export AIRFLOW_HOME=~/airflow
+airflow db init
+airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com
+airflow webserver -p 8080 & airflow scheduler
+
+# Run the Flink job (requires building the JAR)
+cd ../../pipeline/flink
+mvn clean package
+flink run target/FraudDetectionJob.jar --kafka.bootstrap.servers localhost:9092
+
+    For a complete walkthrough, refer to the demo documentation.
+
+15. Glossary
+Term	Description
+ACID	Atomicity, Consistency, Isolation, Durability — database transaction properties
+CDC	Change Data Capture — real-time tracking of database changes
+Citus	PostgreSQL extension for horizontal sharding
+dbt	Data build tool — transforms data in-warehouse using SQL
+Feast	Open-source feature store for ML
+Flink	Stream processing framework with stateful computations
+H+1	Data available one hour after the hour (batch window)
+Kafka	Distributed event streaming platform
+Lambda	Hybrid architecture combining batch and speed layers
+OLAP	Online Analytical Processing (Snowflake)
+OLTP	Online Transaction Processing (PostgreSQL)
+PCI-DSS	Payment Card Industry Data Security Standard
+RBAC	Role-Based Access Control
+SCD Type 2	Slowly Changing Dimension — preserves full history of changes
+Snowflake	Cloud data warehouse with compute/storage separation
+TPS	Transactions per second
+WAL	Write-Ahead Log — PostgreSQL durability mechanism
+
+© 2025 AIA Certification Project – Stripe Business Case
+Licensed under MIT License.
