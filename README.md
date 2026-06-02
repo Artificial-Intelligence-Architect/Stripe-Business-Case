@@ -82,8 +82,8 @@ Stripe-Business-Case/
 │   ├── architecture_diagram.svg
 │   ├── data_ingestion.png
 │   ├── data_ingestion.svg
-│   ├── erd_oltp.mermaid                          ← NEW
-│   └── distributed_conflict_resolution.md        ← NEW
+│   ├── erd_oltp.mermaid                         
+│   └── distributed_conflict_resolution.md     
 │
 ├── ml/
 │   ├── feature_engineering.py
@@ -93,7 +93,7 @@ Stripe-Business-Case/
 │
 ├── nosql/
 │   └── mongodb/
-│       ├── schema.js                             ← NEW
+│       ├── schema.js                          
 │       ├── aggregation_queries.js
 │       ├── index.js
 │       └── sample_documents.json
@@ -101,37 +101,37 @@ Stripe-Business-Case/
 ├── pipeline/
 │   ├── airflow/
 │   │   └── stripe_daily_etl.py
-│   ├── debezium/                                 ← NEW
+│   ├── debezium/                              
 │   │   ├── debezium-postgres-connector.json
 │   │   └── postgres-cdc-setup.sql
 │   ├── dbt/
 │   │   └── stripe_dbt/
-│   │       ├── packages.yml                      ← NEW
+│   │       ├── packages.yml                   
 │   │       ├── dbt_project.yml
 │   │       ├── macros/
-│   │       │   └── generate_surrogate_key.sql    ← NEW
-│   │       ├── snapshots/                        ← NEW
+│   │       │   └── generate_surrogate_key.sql 
+│   │       ├── snapshots/                     
 │   │       │   ├── merchant_snapshot.sql
 │   │       │   └── customer_snapshot.sql
 │   │       └── models/
 │   │           ├── staging/
-│   │           │   ├── sources.yml               ← NEW
+│   │           │   ├── sources.yml            
 │   │           │   └── stg_transactions.sql
 │   │           ├── intermediate/
 │   │           │   └── int_transactions_enriched.sql
 │   │           └── marts/
-│   │               ├── schema.yml                ← NEW
+│   │               ├── schema.yml             
 │   │               ├── fct_transactions.sql
 │   │               ├── dim_customer.sql
 │   │               ├── dim_merchant.sql
-│   │               └── dim_payment_method.sql    ← NEW
+│   │               └── dim_payment_method.sql 
 │   └── flink/
 │       └── FraudDetectionJob.java
 │
 ├── sql/
 │   ├── oltp/
 │   │   ├── schema.sql
-│   │   └── queries.sql                           ← NEW
+│   │   └── queries.sql                        
 │   ├── olap/
 │   │   ├── schema.sql
 │   │   └── queries_analytics.sql
