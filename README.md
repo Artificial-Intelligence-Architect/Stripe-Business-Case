@@ -380,8 +380,8 @@ SELECT
     COUNT(*)                                            AS total_transactions,
     SUM(f.amount_usd)                                   AS total_revenue_usd,
     AVG(f.amount_usd)                                   AS avg_transaction_usd,
-    COUNT(*) FILTER (WHERE f.is_fraud)                  AS fraud_count,
-    SUM(f.amount_usd) FILTER (WHERE f.is_fraud)         AS fraud_amount_usd
+    SUM(IFF(f.is_fraud, 1, 0))                        AS fraud_count,
+    SUM(IFF(f.is_fraud, f.amount_usd, 0))            AS fraud_amount_usd
 FROM fact_transactions f
 JOIN dim_date     d ON f.date_sk     = d.date_sk
 JOIN dim_merchant m ON f.merchant_sk = m.merchant_sk
@@ -723,7 +723,7 @@ SELECT
     d.month,
     SUM(f.amount_usd)                              AS revenue_usd,
     COUNT(*)                                       AS tx_count,
-    ROUND(100.0 * COUNT(*) FILTER (WHERE f.is_fraud) / COUNT(*), 2) AS fraud_rate_pct
+    SUM(IFF(f.is_fraud, 1, 0)) * 100.0 / COUNT(*) AS fraud_rate_pct
 FROM fact_transactions f
 JOIN dim_merchant       m ON f.merchant_sk = m.merchant_sk
 JOIN dim_payment_method p ON f.method_sk   = p.method_sk
