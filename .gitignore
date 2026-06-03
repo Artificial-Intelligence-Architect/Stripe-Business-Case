@@ -5,3 +5,5 @@ Enonce-stripe.md
 *.zip
 pipeline/airflow/generate_gdpr_report
 *.bak
+.env
+secrets/

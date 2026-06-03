@@ -865,7 +865,48 @@ The interactive Evidently AI report is available here: [`demo/screenshots/eviden
 
 - Docker & Docker Compose >= 2.0
 - Python >= 3.10
-- Java >= 17 (for the Flink job)
+
+### Environment variables — secrets
+
+Never store passwords in plain text. Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+# Then edit .env with your actual credentials — never commit this file
+```
+
+`.env.example` (committed — no real secrets):
+```dotenv
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password_here
+POSTGRES_DB=stripe
+
+# MongoDB
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB=stripe_nosql
+
+# Airflow
+AIRFLOW_ADMIN_USER=admin
+AIRFLOW_ADMIN_EMAIL=admin@example.com
+# AIRFLOW_ADMIN_PASSWORD → set via: read -s AIRFLOW_ADMIN_PASSWORD
+
+# Debezium / CDC
+PG_CDC_USER=cdc_user
+PG_CDC_PASSWORD=your_cdc_password_here
+
+# Snowflake / dbt
+DBT_SNOWFLAKE_ACCOUNT=your_account
+DBT_SNOWFLAKE_USER=your_user
+DBT_SNOWFLAKE_PASSWORD=your_password_here
+
+# ML serving
+ML_API_URL=http://localhost:8000
+KAFKA_BOOTSTRAP=localhost:9092
+FRAUD_SCORE_THRESHOLD=0.5
+```
+
+> `.env` is listed in `.gitignore` — it is never committed to the repository.
 
 ### Quick Start
 
@@ -874,38 +915,54 @@ The interactive Evidently AI report is available here: [`demo/screenshots/eviden
 git clone https://github.com/Artificial-Intelligence-Architect/Stripe-Business-Case.git
 cd Stripe-Business-Case
 
+# Load environment variables
+source .env
+
 # Start the local infrastructure (PostgreSQL, Kafka, MongoDB)
 cd demo/local_setup
 docker-compose up -d
 
 # Load test data into PostgreSQL
-psql -h localhost -U postgres -d stripe -f ../../sql/oltp/schema.sql
-psql -h localhost -U postgres -d stripe -c "\copy transactions FROM 'sample_data/transactions.csv' CSV HEADER"
+psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -f ../../sql/oltp/schema.sql
+psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB \
+  -c "\copy transactions FROM 'sample_data/transactions.csv' CSV HEADER"
+
+# Initialise MongoDB collections and indexes
+cd ../..
+python nosql/mongodb/mongodb_schema.py
+python nosql/mongodb/mongodb_indexes.py
 
 # Deploy Debezium connector (requires Kafka Connect running)
 curl -X POST http://localhost:8083/connectors \
   -H "Content-Type: application/json" \
-  -d @../../pipeline/debezium/debezium-postgres-connector.json
+  -d @pipeline/debezium/debezium-postgres-connector.json
+
+# Install Python dependencies
+pip install -r ml/requirements.txt          # includes pymongo, faust-streaming, httpx
 
 # Install dbt dependencies and run models
-cd ../../pipeline/dbt/stripe_dbt
+cd pipeline/dbt/stripe_dbt
 pip install dbt-snowflake
 dbt deps          # installs dbt_utils from packages.yml
 dbt snapshot      # SCD Type 2 for dim_merchant and dim_customer
 dbt run           # staging → intermediate → marts
 dbt test          # runs all schema tests
+cd ../../..
 
 # (Optional) Run Airflow locally
 export AIRFLOW_HOME=~/airflow
 airflow db init
-airflow users create --username admin --password admin \
-  --firstname Admin --lastname User --role Admin --email admin@example.com
+read -s -p "Airflow admin password: " AIRFLOW_ADMIN_PASSWORD
+airflow users create \
+  --username  $AIRFLOW_ADMIN_USER \
+  --password  $AIRFLOW_ADMIN_PASSWORD \
+  --firstname Admin --lastname User \
+  --role      Admin \
+  --email     $AIRFLOW_ADMIN_EMAIL
 airflow webserver -p 8080 & airflow scheduler
 
-# Run the Flink job (requires building the JAR)
-cd ../../pipeline/flink
-mvn clean package
-flink run target/FraudDetectionJob.jar --kafka.bootstrap.servers localhost:9092
+# Run the fraud detection streaming job (Python/Faust)
+faust -A pipeline.flink.fraud_detection_job worker -l info
 ```
 
 ---
