@@ -26,7 +26,7 @@ def check_model_health(reference_data: pd.DataFrame,
     result = report.as_dict()
 
     # Retraining trigger thresholds
-    auc_threshold = 0.92
+    auc_threshold = 0.93
     drift_threshold = 0.15
 
     current_auc = result["metrics"][1]["result"]["current"]["roc_auc"]

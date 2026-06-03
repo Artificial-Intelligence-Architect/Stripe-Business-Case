@@ -63,3 +63,9 @@ db.app_logs.createIndex(
   { service: 1, level: 1, timestamp: -1 },
   { name: "idx_service_level_time" }
 );
+// Compound index customer_id + ended_at
+// Required for post-session fraud $lookup (aggregation_queries.js query #2)
+db.user_sessions.createIndex(
+  { customer_id: 1, ended_at: -1 },
+  { name: "idx_customer_ended_at" }
+);

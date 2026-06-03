@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: raw
+    database: STRIPE_DB
+    schema: staging
+    description: "Raw tables loaded by Snowpipe from Kafka S3 sink"
+    tables:
+      - name: raw_transactions
+        loaded_at_field: created_at
+        freshness:
+          warn_after: {count: 2, period: hour}
+          error_after: {count: 6, period: hour}
+        columns:
+          - name: transaction_id
+            tests: [not_null, unique]
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ['pending','success','failed','refunded','chargeback']
+          - name: amount
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: "> 0"
+      - name: raw_merchants
+        columns:
+          - name: merchant_id
+            tests: [not_null, unique]
+      - name: raw_customers
+        columns:
+          - name: customer_id
+            tests: [not_null, unique]
+      - name: raw_currencies
+        columns:
+          - name: code
+            tests: [not_null, unique]
