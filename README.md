@@ -6,7 +6,7 @@
 ![OLTP](https://img.shields.io/badge/OLTP-PostgreSQL%20%2B%20Citus-336791?logo=postgresql)
 ![OLAP](https://img.shields.io/badge/OLAP-Snowflake-29B5E8?logo=snowflake)
 ![NoSQL](https://img.shields.io/badge/NoSQL-MongoDB%20Atlas-47A248?logo=mongodb)
-![Pipeline](https://img.shields.io/badge/Pipeline-Kafka%20%7C%20Flink%20%7C%20Airflow%20%7C%20dbt-FF6F00)
+![Pipeline](https://img.shields.io/badge/Pipeline-Kafka%20%7C%20Faust%20%7C%20Airflow%20%7C%20dbt-FF6F00)
 ![ML](https://img.shields.io/badge/ML-Feast%20%7C%20MLflow%20%7C%20FastAPI-blueviolet)
 ![Compliance](https://img.shields.io/badge/Compliance-GDPR%20%7C%20PCI--DSS-critical)
 ![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-brightgreen)
@@ -48,7 +48,7 @@ The proposed architecture rests on three pillars:
 | **OLAP**  | Snowflake          | Complex analytics, Time Travel, dbt-native   |
 | **NoSQL** | MongoDB Atlas      | Semi-structured data, ML features, logs      |
 
-These systems are orchestrated by an event-driven pipeline (**Kafka, Flink, Airflow, dbt**) guaranteeing end-to-end latency below 100 ms for streaming and an H+1 reprocessing window for batch workloads.
+These systems are orchestrated by an event-driven pipeline (**Kafka, Faust, Airflow, dbt**) guaranteeing end-to-end latency below 100 ms for streaming and an H+1 reprocessing window for batch workloads.
 
 Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and automated GDPR/PCI-DSS compliance procedures. A complete ML lifecycle (feature store, training, serving, monitoring) enables real-time fraud detection with inference latency **< 50 ms**.
 
@@ -93,9 +93,9 @@ Stripe-Business-Case/
 │
 ├── nosql/
 │   └── mongodb/
-│       ├── schema.js                          
-│       ├── aggregation_queries.js
-│       ├── index.js
+│       ├── mongodb_schema.py                  ← replaces schema.js
+│       ├── mongodb_aggregation_queries.py    ← replaces aggregation_queries.js
+│       ├── mongodb_indexes.py                ← replaces index.js
 │       └── sample_documents.json
 │
 ├── pipeline/
@@ -126,7 +126,7 @@ Stripe-Business-Case/
 │   │               ├── dim_merchant.sql
 │   │               └── dim_payment_method.sql 
 │   └── flink/
-│       └── FraudDetectionJob.java
+│       └── fraud_detection_job.py
 │
 ├── sql/
 │   ├── oltp/
@@ -153,7 +153,7 @@ Stripe-Business-Case/
 
 | Layer          | Components                                             | Target Latency    |
 |----------------|--------------------------------------------------------|-------------------|
-| Speed layer    | Kafka + Flink (real-time streaming)                    | < 100 ms          |
+| Speed layer    | Kafka + Faust (real-time streaming)                    | < 100 ms          |
 | Batch layer    | Airflow + dbt (H+1 / D+1 reprocessing)                 | Minutes to hours  |
 | Serving layer  | Snowflake (OLAP) + MongoDB (NoSQL) + PostgreSQL (OLTP) | < 1 s             |
 
@@ -505,7 +505,7 @@ dbt tests defined in `models/staging/sources.yml` and `models/marts/schema.yml` 
 | app_logs      | `{service, level, timestamp}`      | Compound          | Error distribution queries             |
 | app_logs      | `{timestamp}`                      | TTL (30 days)     | Automatic log rotation                 |
 
-Full collection schemas with `$jsonSchema` validators and index creation: `nosql/mongodb/schema.js`
+Full collection schemas with `$jsonSchema` validators and index creation: `nosql/mongodb/mongodb_schema.py`
 
 ---
 
@@ -519,7 +519,7 @@ SDK / API       ──────────────► Kafka (topic: stri
                                     │
                     ┌───────────────┼────────────────┐
                     ▼               ▼                ▼
-              Flink Job       Kafka Connect      Kafka → S3
+              Faust Job       Kafka Connect      Kafka → S3
            (FraudDetection)  (MongoDB Sink)    (Snowpipe)
                     │               │                │
                     ▼               ▼                ▼
@@ -563,14 +563,14 @@ validate_sources ──► dbt_run ──► dbt_test ──► refresh_views �
 
 Full DAG: `pipeline/airflow/stripe_daily_etl.py`
 
-### Flink — FraudDetectionJob
+### Faust — fraud_detection_job.py
 
-- **Time window:** Tumbling window of 5 minutes per `merchant_id`
-- **Computed features:** Velocity, amount z-score, geographical consistency
-- **End-to-end latency:** < 100 ms (measured p99)
-- **Back-pressure:** Handled natively by Flink; no message loss
+- **Time window:** Tumbling window of 5 minutes per `customer_id` (Faust Table with TTL)
+- **Computed features:** Velocity, amount ratio, geographical consistency
+- **ML scoring:** Calls FastAPI `/predict` endpoint (< 100 ms p99) with rule-based fallback
+- **Back-pressure:** Handled natively by Faust/Kafka consumer; at-least-once delivery
 
-Full job: `pipeline/flink/FraudDetectionJob.java`
+Full job: `pipeline/flink/fraud_detection_job.py`
 
 ---
 
@@ -647,7 +647,7 @@ Kafka (streaming)       ──►  (online + offline)   ──►  (XGBoost, 90-
 
 | Feature                   | Type    | Source              | Window          | Implemented |
 |---------------------------|---------|---------------------|-----------------|-------------|
-| `txn_count_24h`           | Numeric | Kafka / Flink       | Rolling 1 hour  | ✅          |
+| `txn_count_24h`           | Numeric | Kafka / Faust       | Rolling 1 hour  | ✅          |
 | `avg_txn_amount_30d`      | Numeric | PostgreSQL          | 30-day customer | ✅          |
 | `amount_ratio_30d`        | Numeric | PostgreSQL          | 30-day customer | ✅          |
 | `distinct_countries_30d`  | Numeric | PostgreSQL          | 30-day customer | ✅          |
@@ -759,7 +759,7 @@ db.fraud_events.aggregate([
 ```
 
 Full OLAP queries: `sql/olap/queries_analytics.sql`
-Full NoSQL queries: `nosql/mongodb/aggregation_queries.js`
+Full NoSQL queries: `nosql/mongodb/mongodb_aggregation_queries.py`
 
 ---
 
@@ -771,7 +771,7 @@ Full NoSQL queries: `nosql/mongodb/aggregation_queries.js`
 | OLAP          | Snowflake           | Amazon Redshift       | Compute/storage separation, 90-day Time Travel, Dynamic Tables, dbt-native  |
 | NoSQL         | MongoDB Atlas       | Apache Cassandra      | Native aggregation pipeline, Atlas Search, change streams, flexible sharding|
 | CDC           | Debezium            | AWS DMS               | Open source, < 500 ms latency, `pgoutput` native (no extension), zero loss  |
-| Streaming     | Kafka + Flink       | AWS Kinesis           | Flink: stateful windows, < 100 ms latency; Kafka: mature ecosystem          |
+| Streaming     | Kafka + Faust       | AWS Kinesis           | Faust: stateful windows in Python, < 100 ms latency; Kafka: mature ecosystem |
 | Orchestration | Apache Airflow      | Prefect               | Mature ecosystem, DAG UI, native integrations (dbt, Spark, Snowflake)       |
 | Feature Store | Feast               | Tecton                | Open source, multi-cloud, unified online/offline store, Kafka integration   |
 | ML Tracking   | MLflow              | Weights & Biases      | Open source, on-premise deployable (PCI-DSS compliance)                     |
@@ -977,7 +977,7 @@ faust -A pipeline.flink.fraud_detection_job worker -l info
 | dbt         | Data build tool — transforms data in-warehouse using SQL                         |
 | Dynamic Table | Snowflake construct for incremental pre-aggregations (successor to MV)         |
 | Feast       | Open-source feature store for ML                                                 |
-| Flink       | Stream processing framework with stateful computations                           |
+| Faust       | Python stream processing framework built on Kafka — replacement for Flink/Java   |
 | H+1         | Data available one hour after the hour (batch window)                            |
 | Kafka       | Distributed event streaming platform                                             |
 | Lambda      | Hybrid architecture combining batch and speed layers                             |
