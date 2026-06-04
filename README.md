@@ -16,22 +16,22 @@
 
 ## 📌 Table of Contents
 
-1. [Executive Summary] (#-executive-summary)
-2. [Repository Structure](#-repository-structure)
-3. [Architecture Overview](#-architecture-overview)
-4. [OLTP Model — PostgreSQL](#-oltp-model--postgresql)
-5. [OLAP Model — Star Schema](#-olap-model--star-schema)
-6. [NoSQL Model — MongoDB](#-nosql-model--mongodb)
-7. [Data Pipeline](#-data-pipeline)
-8. [Security & Compliance](#-security--compliance)
-9. [Machine Learning Integration](#-machine-learning-integration)
-10. [SQL & NoSQL Queries](#-sql--nosql-queries)
-11. [Technology Choices & Justifications](#-technology-choices--justifications)
-12. [Performance & Metrics](#-performance--metrics)
-13. [Proof of Functionality](#-proof-of-functionality)
-14. [Local Setup & Quick Start](#-local-setup--quick-start)
-15. [Deployment Guide](#-deployment-guide)
-16. [Glossary](#-glossary)
+1. [Executive Summary](#executive-summary)
+2. [Repository Structure](#repository-structure)
+3. [Architecture Overview](#architecture-overview)
+4. [OLTP Model — PostgreSQL](#oltp-model--postgresql)
+5. [OLAP Model — Star Schema](#olap-model--star-schema)
+6. [NoSQL Model — MongoDB](#nosql-model--mongodb)
+7. [Data Pipeline](#data-pipeline)
+8. [Security & Compliance](#security--compliance)
+9. [Machine Learning Integration](#machine-learning-integration)
+10. [SQL & NoSQL Queries](#sql--nosql-queries)
+11. [Technology Choices & Justifications](#technology-choices--justifications)
+12. [Performance & Metrics](#performance--metrics)
+13. [Proof of Functionality](#proof-of-functionality)
+14. [Local Setup & Quick Start](#local-setup--quick-start)
+15. [Deployment Guide](#deployment-guide)
+16. [Glossary](#glossary)
 
 --- 
 
