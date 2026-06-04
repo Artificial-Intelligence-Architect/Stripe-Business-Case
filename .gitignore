@@ -19,3 +19,10 @@ stripe-business-case.md
 *.pem, 
 secrets.yml
 .checkpoint-*.json
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+*.egg-info/ 
+dist/
