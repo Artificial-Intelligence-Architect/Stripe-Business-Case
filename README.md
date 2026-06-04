@@ -1,10 +1,17 @@
 # Stripe Business Case — Comprehensive Data Architecture
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Snowflake](https://img.shields.io/badge/Snowflake-Cloud-29B5E8?logo=snowflake&logoColor=white)](https://www.snowflake.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Apache Kafka](https://img.shields.io/badge/Kafka-Confluent-231F20?logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
+[![Apache Airflow](https://img.shields.io/badge/Airflow-2.7-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
+[![dbt](https://img.shields.io/badge/dbt-1.5-ff694b?logo=dbt&logoColor=white)](https://www.getdbt.com/)
+
 > **AIA Certification Project | Data Engineering**
 > **Data Engineer — Architecture Proposal**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 --- 
 
 ## 📌 Table of Contents
