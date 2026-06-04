@@ -51,3 +51,24 @@ async def score_transactions(stream):
         score = model.predict([features])[0]
         if score > 0.85:
             await send_to_kafka('fraud_alerts', event)
+```
+
+## 3. Business Performance Metrics
+Metric	Target	Measurement
+False positive rate	< 2% of transactions	Daily SQL on Snowflake
+Detection rate (recall)	≥ 90% of true frauds	Weekly chargeback reconciliation
+p99 latency	< 100 ms	From transaction timestamp to decision
+
+## 4. Model Monitoring Dashboard
+
+Suggested Grafana panels:
+
+    Drift scores per feature (KS statistic)
+
+    Average fraud score over time
+
+    Model prediction count & latency percentiles
+
+    Alert history (PagerDuty)
+
+This strategy ensures that machine learning models remain accurate, safe and auditable in Stripe’s high‑throughput financial environment.

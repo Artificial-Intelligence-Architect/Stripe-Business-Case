@@ -1,0 +1,40 @@
+flowchart TD
+    subgraph Sources
+        A[PostgreSQL OLTP\nTransactions, Merchants, Customers]
+        B[SDK / API\nStripe Events]
+    end
+    subgraph Ingestion
+        C[Debezium\nCDC from PostgreSQL WAL]
+        D[Kafka Topics\npg.transactions\nstripe.events]
+    end
+    subgraph Processing
+        E[Faust Job\nFraud Detection\nTumbling Window: 5 min]
+        F[Kafka Connect\nMongoDB Sink]
+        G[Kafka to S3\nSnowpipe]
+    end
+    subgraph Destinations
+        H[MongoDB Atlas\nfraud_events\nuser_sessions\napp_logs]
+        I[Snowflake\nOLAP: fact_transactions\ndim_tables]
+    end
+    subgraph Orchestration
+        J[Airflow + dbt\nBatch ETL\nSchedule: 02:00 UTC\nSLA: H+1]
+    end
+    subgraph Monitoring
+        K[Evidently AI\nML Model Drift]
+        L[Slack / PagerDuty\nAlerts]
+    end
+    A -->|WAL| C
+    B -->|Events| D
+    C -->|Avro| D
+    D --> E
+    D --> F
+    D --> G
+    E -->|fraud_score| A
+    E -->|fraud_events| H
+    F -->|Sync| H
+    G -->|Snowpipe| I
+    J -->|Transform| I
+    I -->|Data| K
+    E -->|Metrics| K
+    K -->|Alerts| L
+    J -->|Failure| L

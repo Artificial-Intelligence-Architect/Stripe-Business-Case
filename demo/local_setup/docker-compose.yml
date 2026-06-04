@@ -11,6 +11,11 @@ services:
     volumes:
       - ../../sql/oltp/schema.sql:/docker-entrypoint-initdb.d/schema.sql
       - ./sample_data/transactions.csv:/tmp/transactions.csv
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stripe -d stripe_oltp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - stripe-network
 
@@ -21,20 +26,11 @@ services:
       MONGO_INITDB_DATABASE: stripe_nosql
     ports:
       - "27017:27017"
-    networks:
-      - stripe-network
-
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    container_name: stripe-kafka
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-    ports:
-      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - stripe-network
 
@@ -43,6 +39,32 @@ services:
     container_name: stripe-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - stripe-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: stripe-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
     networks:
       - stripe-network
 
@@ -50,16 +72,44 @@ services:
     image: apache/airflow:2.7.1
     container_name: stripe-airflow
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://stripe:stripe_pass@postgres/stripe_oltp
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://stripe:stripe_pass@postgres/stripe_oltp
+      AIRFLOW__WEBSERVER__RBAC: "True"
+      AIRFLOW__WEBSERVER__WEB_SERVER_PORT: 8080
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     ports:
-      - "8081:8080"
+      - "8080:8080"
     volumes:
       - ../../pipeline/airflow:/opt/airflow/dags
     command: webserver
+    networks:
+      - stripe-network
+
+  # Optionnel : Kafka Connect + Debezium pour CDC
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:latest
+    container_name: stripe-kafka-connect
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:9092
+      CONNECT_GROUP_ID: stripe-connect
+      CONNECT_CONFIG_STORAGE_TOPIC: stripe-connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: stripe-connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: stripe-connect-status
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_PLUGIN_PATH: /usr/share/java,/usr/share/confluent-hub-components
+    ports:
+      - "8083:8083"
     networks:
       - stripe-network
 

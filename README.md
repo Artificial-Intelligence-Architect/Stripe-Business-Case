@@ -3,6 +3,8 @@
 > **AIA Certification Project | Data Engineering**
 > **Data Engineer — Architecture Proposal**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 --- 
 
 ## 📌 Table of Contents
@@ -54,93 +56,112 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 
 ```
 Stripe-Business-Case/
+Stripe-Business-Case/
 ├── demo/
-│   ├── local_setup/
-│   │   ├── docker-compose.yml
-│   │   ├── docker-compose-kafka.yml
-│   │   ├── docker-compose-airflow.yml
-│   │   └── sample_data/
-│   │       ├── transactions.csv
-│   │       └── fraud_events.json
-│   ├── sample_data/
-│   │   └── fraud_events.json
-│   └── screenshots/
-│       ├── airflow_dag_grid_run.png
-│       ├── airflow_graph_run.png
-│       ├── evidently_report.html
-│       └── sql_query_result.png
+│ ├── local_setup/
+│ │ ├── docker-compose.yml
+│ │ ├── init_mongo.py
+│ │ ├── README.md
+│ │ └── sample_data/
+│ │ └── transactions.csv
+│ ├── sample_data/
+│ │ └── fraud_events.json
+│ └── screenshots/
+│ ├── airflow_dag_grid_run.png
+│ ├── airflow_graph_run.png
+│ ├── evidently_report.html
+│ └── sql_query_result.png
 │
 ├── docs/
-│   ├── architecture_diagram.png
-│   ├── architecture_diagram.svg
-│   ├── data_ingestion.png
-│   ├── data_ingestion.svg
-│   ├── erd_oltp.mermaid
-│   ├── erd_olap.mermaid
-│   ├── data_pipeline.mermaid
-│   ├── technological_alternatives.md
-│   ├── deployment_guide.md
-│   └── distributed_conflict_resolution.md
+│ ├── 01_architecture.md
+│ ├── 02_oltp_model.md
+│ ├── 03_olap_model.md
+│ ├── 04_nosql_model.md
+│ ├── 05_pipeline_architecture.md
+│ ├── 06_security_compliance.md
+│ ├── 07_ml_strategy.md
+│ ├── 08_queries.md
+│ ├── 09_observability.md
+│ ├── 10_runbooks.md
+│ ├── 11_architecture_decisions.md
+│ ├── architecture_diagram.png
+│ ├── data_ingestion.png
+│ ├── deployment-guide-stripe-data-architecture.md
+│ ├── distributed_conflict_resolution.md
+│ ├── erd_oltp.mermaid
+│ ├── stripe-olap-star-schema-erd.md
+│ └── technological-alternatives-evaluated.md
 │
 ├── ml/
-│   ├── feature_engineering.py
-│   ├── model_monitoring.py
-│   ├── generate_evidently_report.py
-│   └── requirements.txt
+│ ├── feature_engineering.py
+│ ├── generate_evidently_report.py
+│ ├── model_monitoring.py
+│ ├── models_config.py
+│ └── requirements.txt
 │
 ├── nosql/
-│   └── mongodb/
-│       ├── mongodb_schema.py
-│       ├── mongodb_aggregation_queries.py
-│       ├── mongodb_indexes.py
-│       └── sample_documents.json
+│ └── mongodb/
+│ ├── mongodb_aggregation_queries.py
+│ ├── mongodb_indexes.py
+│ ├── mongodb_schema.py
+│ └── sample_documents.json
 │
 ├── pipeline/
-│   ├── airflow/
-│   │   └── stripe_daily_etl.py
-│   ├── debezium/
-│   │   ├── debezium-postgres-connector.json
-│   │   └── postgres-cdc-setup.sql
-│   ├── dbt/
-│   │   └── stripe_dbt/
-│   │       ├── packages.yml
-│   │       ├── dbt_project.yml
-│   │       ├── macros/
-│   │       │   └── generate_surrogate_key.sql
-│   │       ├── snapshots/
-│   │       │   ├── merchant_snapshot.sql
-│   │       │   └── customer_snapshot.sql
-│   │       └── models/
-│   │           ├── staging/
-│   │           │   ├── sources.yml
-│   │           │   └── stg_transactions.sql
-│   │           ├── intermediate/
-│   │           │   └── int_transactions_enriched.sql
-│   │           └── marts/
-│   │               ├── schema.yml
-│   │               ├── fct_transactions.sql
-│   │               ├── dim_customer.sql
-│   │               ├── dim_merchant.sql
-│   │               └── dim_payment_method.sql
-│   └── flink/
-│       └── fraud_detection_job.py
+│ ├── airflow/
+│ │ └── stripe_daily_etl.py
+│ ├── dbt/
+│ │ └── stripe_dbt/
+│ │ ├── dbt_project.yml
+│ │ ├── packages.yml
+│ │ ├── README.md
+│ │ ├── macros/
+│ │ │ ├── currency_conversion.sql
+│ │ │ └── generate_surrogate_key.sql
+│ │ ├── models/
+│ │ │ ├── staging/
+│ │ │ │ ├── sources.yml
+│ │ │ │ └── stg_transactions.sql
+│ │ │ ├── intermediate/
+│ │ │ │ └── int_transactions_enriched.sql
+│ │ │ └── marts/
+│ │ │ ├── dim_customer.sql
+│ │ │ ├── dim_merchant.sql
+│ │ │ ├── dim_payment_method.sql
+│ │ │ ├── fct_transactions.sql
+│ │ │ └── schema.yml
+│ │ └── snapshots/
+│ │ ├── customer_snapshot.sql
+│ │ └── merchant_snapshot.sql
+│ ├── debezium/
+│ │ ├── debezium-postgres-connector.json
+│ │ └── postgres-cdc-setup.sql
+│ └── flink/
+│ └── fraud_detection_job.py
 │
 ├── sql/
-│   ├── oltp/
-│   │   ├── schema.sql
-│   │   └── queries.sql
-│   ├── olap/
-│   │   ├── schema.sql
-│   │   └── queries_analytics.sql
-│   └── security/
-│       ├── ccpa_compliance.sql
-│       ├── rbac_setup.sql
-│       └── gdpr_erasure.sql
+│ ├── oltp/
+│ │ ├── schema.sql
+│ │ └── queries.sql
+│ ├── olap/
+│ │ ├── schema.sql
+│ │ └── queries_analytics.sql
+│ └── security/
+│ ├── ccpa_compliance.sql
+│ ├── gdpr_erasure.sql
+│ └── rbac_setup.sql
 │
-├── .env.example
+├── tests/
+│ ├── init.py
+│ ├── test_feature_engineering.py
+│ └── test_oltp_queue.py
+│
+├── .env.example (à créer)
 ├── .gitignore
 ├── LICENSE
-└── README.md
+├── README.md
+├── requirements.txt
+├── requirements-dev.txt
+└── stripe-business-case.md
 ```
 
 --- 
@@ -369,7 +390,7 @@ CREATE TABLE transactions (
 **Discarded alternative:** Amazon Redshift — tight compute/storage coupling, manual VACUUM management, less suited to Stripe's unpredictable ad-hoc workloads.
 
 ### Star Schema
-> Full ERD: [OLAP Star Schema (Mermaid)](docs/erd_olap.mermaid)
+> Full ERD: [OLAP Star Schema](docs/stripe-olap-star-schema-erd.md)
 
 ### Dynamic Tables (Pre-aggregations)
 ```sql
@@ -540,7 +561,7 @@ Full queries: [NoSQL Aggregation Queries](nosql/mongodb/mongodb_aggregation_quer
 ## 🔧 Technology Choices & Justifications
 
 For a **detailed comparison** of the technological alternatives evaluated (Snowflake vs. Redshift vs. BigQuery, MongoDB vs. Cassandra vs. DynamoDB, etc.), see:
-📄 **[Technological Alternatives Evaluated](docs/technological_alternatives.md)**
+📄 **[Technological Alternatives Evaluated](docs/technological-alternatives-evaluated.md)**
 
 --- 
 
@@ -582,7 +603,7 @@ For a **detailed comparison** of the technological alternatives evaluated (Snowf
 ## 🛠️ Local Setup & Quick Start
 
 For a **detailed step-by-step guide** to deploy the entire architecture, see:
-📄 **[Deployment Guide](docs/deployment_guide.md)**
+📄 **[Deployment Guide](docs/deployment-guide-stripe-data-architecture.md)**
 
 ### Quick Start (Local Docker)
 ```bash
@@ -590,18 +611,13 @@ For a **detailed step-by-step guide** to deploy the entire architecture, see:
 git clone https://github.com/Artificial-Intelligence-Architect/Stripe-Business-Case.git
 cd Stripe-Business-Case
 
-# Start PostgreSQL + Citus
+# # Start ALL services (PostgreSQL, MongoDB, Kafka, ZooKeeper, Airflow)
 docker-compose -f demo/local_setup/docker-compose.yml up -d
-
-# Start Kafka + Debezium
-docker-compose -f demo/local_setup/docker-compose-kafka.yml up -d
 
 # Register the Debezium connector
 curl -X POST http://localhost:8083/connectors -H "Content-Type: application/json" \
   -d @pipeline/debezium/debezium-postgres-connector.json
 
-# Start Airflow
-docker-compose -f demo/local_setup/docker-compose-airflow.yml up -d
 ```
 
 Access the UIs:
