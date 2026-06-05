@@ -17,20 +17,20 @@
 ## 📌 Table of Contents
 
 1. [Executive Summary](#-executive-summary)
-2. [Repository Structure](#repository-structure)
-3. [Architecture Overview](#architecture-overview)
-4. [OLTP Model — PostgreSQL](#oltp-model--postgresql)
-5. [OLAP Model — Star Schema](#olap-model--star-schema)
-6. [NoSQL Model — MongoDB](#nosql-model--mongodb)
-7. [Data Pipeline](https://github.com/Artificial-Intelligence-Architect/Stripe-Business-Case#-data-pipeline)
-8. [Security & Compliance](#security--compliance)
-9. [Machine Learning Integration](#machine-learning-integration)
-10. [SQL & NoSQL Queries](#sql--nosql-queries)
-11. [Technology Choices & Justifications](#technology-choices--justifications)
-12. [Performance & Metrics](#performance--metrics)
-13. [Proof of Functionality](#proof-of-functionality)
-14. [Local Setup & Quick Start](#local-setup--quick-start)
-15. [Deployment Guide](#deployment-guide)
+2. [Repository Structure](#-repository-structure)
+3. [Architecture Overview](#️-architecture-overview)
+4. [OLTP Model — PostgreSQL](#️-oltp-model--postgresql)
+5. [OLAP Model — Star Schema](#-olap-model--star-schema)
+6. [NoSQL Model — MongoDB](#️-nosql-model--mongodb)
+7. [Data Pipeline](#-data-pipeline)
+8. [Security & Compliance](#-security--compliance)
+9. [Machine Learning Integration](#-machine-learning-integration)
+10. [SQL & NoSQL Queries](#-sql--nosql-queries)
+11. [Technology Choices & Justifications](#-technology-choices--justifications)
+12. [Performance & Metrics](#-performance--metrics)
+13. [Proof of Functionality](#-proof-of-functionality)
+14. [Local Setup & Quick Start](#️-local-setup--quick-start)
+15. [Deployment Guide](#-deployment-guide)
 16. [Glossary](#-glossary)
 
 --- 
@@ -633,7 +633,126 @@ Access the UIs:
 - **Kafka UI**: `http://localhost:8080`
 - **Airflow**: `http://localhost:8080` (username: `airflow`, password: `airflow`)
 
---- 
+
+
+---
+## 🚀 Deployment Guide
+
+For a **detailed, step-by-step deployment guide**, refer to the dedicated document:
+📄 **[Full Deployment Guide](./docs/deployment-guide-stripe-data-architecture.md)**
+
+### 📌 Quick Deployment Overview
+This architecture is designed for **local development** and **cloud deployment** (AWS/GCP/Azure). Below are the key steps to deploy the entire stack.
+
+---
+
+### 🛠️ Prerequisites
+   Tool/Service       | Version/Requirements                            | Purpose                                   |
+ |--------------------|-------------------------------------------------|-------------------------------------------|
+ | Docker             | 20.10+                                          | Containerization                          |
+ | Docker Compose     | 2.20+                                           | Multi-container orchestration             |
+ | Python             | 3.10+                                           | Scripting & dependencies                  |
+ | Git                | Latest                                          | Version control                           |
+ | Cloud Provider     | AWS/GCP/Azure (optional for cloud deployment)   | Hosting (Snowflake, MongoDB Atlas, Kafka) |
+
+---
+
+### 🌍 Local Deployment (Docker)
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/Artificial-Intelligence-Architect/Stripe-Business-Case.git
+cd Stripe-Business-Case
+```
+
+#### 2. Start All Services
+docker-compose -f demo/local_setup/docker-compose.yml up -d
+
+Services launched:
+
+- PostgreSQL + Citus (OLTP)
+- MongoDB Atlas (NoSQL)
+- Kafka + Zookeeper (Streaming)
+- Airflow (Orchestration)
+- Debezium (CDC)
+
+#### 3. Verify Services
+|Service   |URL                        |Credentials                          |
+|-----------|----------------------- --|-------------------------------------|
+|PostgreSQL |http://localhost:5050     |Default (see docker-compose.yml)     |
+|Kafka UI   |http://localhost:8080     | -                                   |
+|Airflow    |http://localhost:8080     |username: airflow, password: airflow |
+|MongoDB    |mongodb://localhost:27017 |Default (see docker-compose.yml)     |
+
+#### 4. Register Debezium Connector
+curl -X POST http://localhost:8083/connectors \
+  -H "Content-Type: application/json" \
+  -d @pipeline/debezium/debezium-postgres-connector.json
+
+#### 5. Test the Pipeline
+
+Trigger a manual Airflow DAG run via the UI (http://localhost:8080).
+Check Kafka topics for streaming data:
+
+docker exec -it kafka-container kafka-topics --list --bootstrap-server localhost:9092
+
+### ☁️ Cloud Deployment (AWS Example)
+#### 1. Set Up Infrastructure
+
+# Snowflake: Create a free trial account and configure:
+
+A database (STRIPE_DB)
+A warehouse (ANALYTICS_WH)
+A schema (OLAP_SCHEMA)
+
+MongoDB Atlas: Deploy a free cluster and note the connection string.
+Kafka: Use Confluent Cloud or deploy on EC2.
+
+#### 2. Configure Environment Variables
+Create a .env file in the root directory:
+# Snowflake
+SNOWFLAKE_ACCOUNT=your-account
+SNOWFLAKE_USER=your-user
+SNOWFLAKE_PASSWORD=your-password
+SNOWFLAKE_DATABASE=STRIPE_DB
+SNOWFLAKE_WAREHOUSE=ANALYTICS_WH
+
+# MongoDB Atlas
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/stripe?retryWrites=true&w=majority
+
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS=your-kafka-brokers:9092
+
+#### 3. Deploy with Terraform (Optional)
+If using Terraform for infrastructure-as-code:
+cd terraform/
+terraform init
+terraform apply
+
+#### 4. Run dbt for OLAP
+cd pipeline/dbt/stripe_dbt
+dbt run --profiles-dir .
+
+🔍 Troubleshooting
+|Issue                              |Solution                                                           |
+|-----------------------------------|-------------------------------------------------------------------|
+|Docker containers fail to start    |Check logs: docker logs <container_name>                           |
+|Debezium connector errors          |Verify PostgreSQL WAL level: ALTER SYSTEM SET wal_level = logical; |
+|Airflow DAG fails                  |Check logs in Airflow UI or docker logs airflow-worker             |
+|Kafka topics not created           |Ensure Zookeeper is running: docker ps                             |
+
+✅ Validation
+
+OLTP: Run a test query on PostgreSQL:
+SELECT COUNT(*) FROM transactions;
+
+OLAP: Verify Snowflake tables:
+SELECT * FROM OLAP_SCHEMA.fact_transactions LIMIT 10;
+
+NoSQL: Check MongoDB collections:
+use stripe;
+db.fraud_events.findOne();
+
+---
 
 ## 📖 Glossary
 
