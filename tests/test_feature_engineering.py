@@ -1,15 +1,31 @@
+"""
+Unit tests for fraud feature engineering (PySpark).
+Uses a simplified merchant fraud rate function for test determinism.
+The production version uses a sliding window (see ml/feature_engineering.py).
+"""
+
 import pytest
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, TimestampType, BooleanType
+from pyspark.sql import functions as F
 from datetime import datetime
-from ml.feature_engineering import compute_fraud_features, compute_merchant_fraud_rates
+from ml.feature_engineering import compute_fraud_features   # production function
 
 @pytest.fixture(scope="session")
 def spark():
+    """Creates a local Spark session for testing."""
     return SparkSession.builder.master("local[2]").appName("test").getOrCreate()
 
+# ----- Simplified merchant fraud rate (for tests only) -----
+def _simple_merchant_fraud_rates(df_transactions):
+    """Simplified version (groupBy + avg) used only for unit tests.
+    The production implementation uses a rolling 7‑day window."""
+    return (df_transactions
+            .groupBy("merchant_id")
+            .agg(F.avg(F.col("is_fraud").cast("double")).alias("fraud_rate_7d")))
+
 def test_compute_fraud_features_basic(spark):
-    # Arrange: create a small transactions DataFrame
+    """Test the main fraud feature engineering function with a small dataset."""
     schema = StructType([
         StructField("transaction_id", StringType()),
         StructField("customer_id", StringType()),
@@ -30,15 +46,13 @@ def test_compute_fraud_features_basic(spark):
     ]
     df_transactions = spark.createDataFrame(data, schema)
 
-    df_merchant_stats = compute_merchant_fraud_rates(df_transactions)
+    # Use simplified merchant stats for test predictability
+    df_merchant_stats = _simple_merchant_fraud_rates(df_transactions)
 
-    # Act
     result_df = compute_fraud_features(df_transactions, df_merchant_stats)
-
-    # Collect results ordered by timestamp
     results = result_df.orderBy("created_at").collect()
 
-    # Assertions for first transaction (tx1)
+    # First transaction (tx1)
     assert results[0]["txn_count_24h"] == 1
     assert results[0]["avg_txn_amount_30d"] == 100.0
     assert results[0]["amount_ratio_30d"] == 1.0
@@ -47,7 +61,7 @@ def test_compute_fraud_features_basic(spark):
     assert results[0]["device_fingerprint_match"] == 1
     assert round(results[0]["merchant_fraud_rate_7d"], 2) == 0.33
 
-    # Assertions for second transaction (tx2)
+    # Second transaction (tx2)
     assert results[1]["txn_count_24h"] == 2
     assert round(results[1]["avg_txn_amount_30d"], 1) == 150.0
     assert round(results[1]["amount_ratio_30d"], 2) == round(200.0 / 150.0, 2)
@@ -56,7 +70,7 @@ def test_compute_fraud_features_basic(spark):
     assert results[1]["device_fingerprint_match"] == 1
     assert round(results[1]["merchant_fraud_rate_7d"], 2) == 0.33
 
-    # Assertions for third transaction (tx3)
+    # Third transaction (tx3)
     assert results[2]["txn_count_24h"] == 3
     assert round(results[2]["avg_txn_amount_30d"], 1) == round((100 + 200 + 50) / 3, 1)
     assert round(results[2]["amount_ratio_30d"], 2) == round(50.0 / 116.666, 2)
@@ -65,7 +79,8 @@ def test_compute_fraud_features_basic(spark):
     assert results[2]["device_fingerprint_match"] == 0
     assert round(results[2]["merchant_fraud_rate_7d"], 2) == 0.33
 
-def test_compute_merchant_fraud_rates(spark):
+def test_simple_merchant_fraud_rates(spark):
+    """Test the simplified (groupBy) merchant fraud rate function used in tests."""
     schema = StructType([
         StructField("merchant_id", StringType()),
         StructField("created_at", TimestampType()),
@@ -79,9 +94,7 @@ def test_compute_merchant_fraud_rates(spark):
         ("merch2", datetime(2024, 1, 1, 10, 0, 0), False, "t4"),
     ]
     df = spark.createDataFrame(data, schema)
-    result = compute_merchant_fraud_rates(df)
+    result = _simple_merchant_fraud_rates(df)
     result_dict = {row["merchant_id"]: round(row["fraud_rate_7d"], 2) for row in result.collect()}
-
-    # With the simplified average (groupBy), all transactions are considered: 1 fraud out of 3 → 0.33
-    assert result_dict["merch1"] == 0.33
+    assert result_dict["merch1"] == 0.33   # 1 fraud out of 3 transactions
     assert result_dict["merch2"] == 0.0

@@ -72,3 +72,15 @@ Suggested Grafana panels:
     Alert history (PagerDuty)
 
 This strategy ensures that machine learning models remain accurate, safe and auditable in Stripe’s high‑throughput financial environment.
+
+## Automated Drift Detection
+
+To detect data drift in production features, we use **Evidently AI**.  
+A script `ml/drift_monitoring.py` compares reference (training) features with current (production) features and generates an HTML report.
+
+**Integration with Airflow:**  
+The script can be scheduled daily via a separate DAG. If drift exceeds a threshold (e.g., Kolmogorov–Smirnov > 0.05), an alert is triggered.
+
+**Execution example:**
+```bash
+python ml/drift_monitoring.py --ref data/training_features.csv --cur data/production_features.csv --output drift_report.html
