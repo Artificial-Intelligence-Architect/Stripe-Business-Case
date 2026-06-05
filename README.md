@@ -63,113 +63,112 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 
 ```
 Stripe-Business-Case/
-Stripe-Business-Case/
 ├── demo/
-│ ├── local_setup/
-│ │ ├── docker-compose.yml
-│ │ ├── init_mongo.py
-│ │ ├── README.md
-│ │ └── sample_data/
-│ │     └── transactions.csv/
-│ |     └── generate_transactions.py
-│ ├── sample_data/
-│ │ └── fraud_events.json
-│ └── screenshots/
-│ ├── airflow_dag_grid_run.png
-│ ├── airflow_graph_run.png
-│ ├── evidently_report.html
-│ └── sql_query_result.png
-│
-├── docs/
-│ ├── 01_architecture.md
-│ ├── 02_oltp_model.md
-│ ├── 03_olap_model.md
-│ ├── 04_nosql_model.md
-│ ├── 05_pipeline_architecture.md
-│ ├── 06_security_compliance.md
-│ ├── 07_ml_strategy.md
-│ ├── 08_queries.md
-│ ├── 09_observability.md
-│ ├── 10_runbooks.md
-│ ├── 11_architecture_decisions.md
-│ ├── architecture_diagram.png
-│ ├── data_ingestion.png
-│ ├── deployment-guide-stripe-data-architecture.md
-│ ├── distributed_conflict_resolution.md
-│ ├── erd_oltp.mermaid
-│ ├── stripe-olap-star-schema-erd.md
-│ └── technological-alternatives-evaluated.md
-│
-├── ml/
-│ ├── feature_engineering.py
-│ ├── generate_evidently_report.py
-│ ├── model_monitoring.py
-│ ├── models_config.py
-│ └── requirements.txt
-│
-├── nosql/
-│ └── mongodb/
-│ ├── mongodb_aggregation_queries.py
-│ ├── mongodb_indexes.py
-│ ├── mongodb_schema.py
-│ └── sample_documents.json
-│
-├── pipeline/
-│ ├── airflow/
-│ │ └── stripe_daily_etl.py
-│ ├── dbt/
-│ │ └── stripe_dbt/
-│ │ ├── dbt_project.yml
-│ │ ├── packages.yml
-│ │ ├── README.md
-│ │ ├── macros/
-│ │ │ ├── currency_conversion.sql
-│ │ │ └── generate_surrogate_key.sql
-│ │ ├── models/
-│ │ │ ├── staging/
-│ │ │ │ ├── sources.yml
-│ │ │ │ └── stg_transactions.sql
-│ │ │ ├── intermediate/
-│ │ │ │ └── int_transactions_enriched.sql
-│ │ │ └── marts/
-│ │ │ ├── dim_customer.sql
-│ │ │ ├── dim_merchant.sql
-│ │ │ ├── dim_payment_method.sql
-│ │ │ ├── fct_transactions.sql
-│ │ │ └── schema.yml
-│ │ └── snapshots/
-│ │ ├── customer_snapshot.sql
-│ │ └── merchant_snapshot.sql
-│ ├── debezium/
-│ │ ├── debezium-postgres-connector.json
-│ │ └── postgres-cdc-setup.sql
-│ └── flink/
-│ └── fraud_detection_job.py
-│
-├── sql/
-│ ├── oltp/
-│ │ ├── schema.sql
-│ │ └── queries.sql
-│ ├── olap/
-│ │ ├── schema.sql
-│ │ └── queries_analytics.sql
-│ └── security/
-│ ├── ccpa_compliance.sql
-│ ├── gdpr_erasure.sql
-│ └── rbac_setup.sql
-│
-├── tests/
-│ ├── init.py
-│ ├── test_feature_engineering.py
-│ └── test_oltp_queue.py
-│
-├── .env.example (à créer)
-├── .gitignore
+│   ├── local_setup
+│   │   ├── docker-compose.yml
+│   │   ├── init_mongo.py
+│   │   ├── README.md
+│   │   └── sample_data
+│   │       ├── generate_transactions.py
+│   │       └── transactions.csv
+│   ├── sample_data
+│   │   └── fraud_events.json
+│   └── screenshots
+│       ├── airflow_dag_grid_run.png
+│       ├── airflow_graph_run.png
+│       ├── evidently_report.html
+│       └── sql_query_result.png
+├── docs
+│   ├── 01_architecture.md
+│   ├── 02_oltp_model.md
+│   ├── 03_olap_model.md
+│   ├── 04_nosql_model.md
+│   ├── 05_pipeline_architecture.md
+│   ├── 06_security_compliance.md
+│   ├── 07_ml_strategy.md
+│   ├── 08_queries.md
+│   ├── 09_observability.md
+│   ├── 10_runbooks.md
+│   ├── 11_architecture_decisions.md
+│   ├── architecture_diagram.png
+│   ├── data_ingestion.png
+│   ├── data_pipeline.mermaid
+│   ├── deployment-guide-stripe-data-architecture.md
+│   ├── distributed_conflict_resolution.md
+│   ├── erd_oltp.mermaid
+│   ├── stripe-olap-star-schema-erd.md
+│   └── technological-alternatives-evaluated.md
 ├── LICENSE
+├── ml
+│   ├── drift_monitoring.py
+│   ├── feature_engineering.py
+│   ├── generate_evidently_report.py
+│   ├── model_monitoring.py
+│   ├── models_config.py
+│   ├── __pycache__
+│   │   └── feature_engineering.cpython-310.pyc
+│   └── requirements.txt
+├── nosql
+│   └── mongodb
+│       ├── mongodb_aggregation_queries.py
+│       ├── mongodb_indexes.py
+│       ├── mongodb_schema.py
+│       └── sample_documents.json
+├── pipeline
+│   ├── airflow
+│   │   └── stripe_daily_etl.py
+│   ├── dbt
+│   │   └── stripe_dbt
+│   │       ├── dbt_project.yml
+│   │       ├── macros
+│   │       │   ├── currency_conversion.sql
+│   │       │   └── generate_surrogate_key.sql
+│   │       ├── models
+│   │       │   ├── intermediate
+│   │       │   │   └── int_transactions_enriched.sql
+│   │       │   ├── marts
+│   │       │   │   ├── dim_customer.sql
+│   │       │   │   ├── dim_merchant.sql
+│   │       │   │   ├── dim_payment_method.sql
+│   │       │   │   ├── fct_transactions.sql
+│   │       │   │   └── schema.yml
+│   │       │   └── staging
+│   │       │       ├── sources.yml
+│   │       │       └── stg_transactions.sql
+│   │       ├── packages.yml
+│   │       ├── README.md
+│   │       └── snapshots
+│   │           ├── customer_snapshot.sql
+│   │           └── merchant_snapshot.sql
+│   ├── debezium
+│   │   ├── debezium-postgres-connector.json
+│   │   └── postgres-cdc-setup.sql
+│   └── flink
+│       └── fraud_detection_job.py
 ├── README.md
-├── requirements.txt
 ├── requirements-dev.txt
-└── stripe-business-case.md
+├── requirements.txt
+├── sql
+│   ├── olap
+│   │   ├── queries_analytics.sql
+│   │   └── schema.sql
+│   ├── oltp
+│   │   ├── queries.sql
+│   │   └── schema.sql
+│   └── security
+│       ├── ccpa_compliance.sql
+│       ├── gdpr_erasure.sql
+│       └── rbac_setup.sql
+├── stripe-business-case.md
+└── tests
+    ├── __init__.py
+    ├── __pycache__
+    │   ├── __init__.cpython-310.pyc
+    │   ├── test_feature_engineering.cpython-310-pytest-9.0.3.pyc
+    │   └── test_oltp_queue.cpython-310-pytest-9.0.3.pyc
+    ├── test_feature_engineering.py
+    └── test_oltp_queue.py
+
 ```
 
 --- 
