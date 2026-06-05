@@ -8,6 +8,9 @@
 [![Apache Kafka](https://img.shields.io/badge/Kafka-Confluent-231F20?logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
 [![Apache Airflow](https://img.shields.io/badge/Airflow-2.7-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![dbt](https://img.shields.io/badge/dbt-1.5-ff694b?logo=dbt&logoColor=white)](https://www.getdbt.com/)
+![PySpark](https://img.shields.io/badge/PySpark-3.5-blue)
+![Tests](https://img.shields.io/badge/tests-PySpark%20%26%20PostgreSQL-9C27B0)
+![Documentation](https://img.shields.io/badge/docs-passing-brightgreen)
 
 > **AIA Certification Project | Data Engineering**
 > **Data Engineer — Architecture Proposal**
