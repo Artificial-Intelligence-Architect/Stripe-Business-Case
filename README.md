@@ -676,8 +676,8 @@ Services launched:
 - Debezium (CDC)
 
 #### 3. Verify Services
-|Service   |URL                        |Credentials                          |
-|-----------|----------------------- --|-------------------------------------|
+|Service    |URL                       |Credentials                          |
+|---------- |--------------------------|-------------------------------------|
 |PostgreSQL |http://localhost:5050     |Default (see docker-compose.yml)     |
 |Kafka UI   |http://localhost:8080     | -                                   |
 |Airflow    |http://localhost:8080     |username: airflow, password: airflow |
