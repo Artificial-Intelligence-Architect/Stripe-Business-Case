@@ -45,11 +45,13 @@ These services are included in the architecture design but are not required for 
 
 ## Prerequisites
 
-* Docker Engine 24+
-* Docker Compose 2+
-* Python 3.10+
-* Java 17+ (optional)
+* Docker Engine  >= 24
+* Docker Compose >= 2
+* Python >= 3.10
 
+Optional:
+
+- Java >= 17 only if the reference Flink implementation is executed.
 ---
 
 ## Start Infrastructure

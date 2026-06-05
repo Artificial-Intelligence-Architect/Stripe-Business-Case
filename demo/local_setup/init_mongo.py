@@ -1,126 +1,98 @@
-db = db.getSiblingDB("stripe_demo");
+from pymongo import MongoClient
+from datetime import datetime
 
-/*
-----------------------------------
-fraud_events
-----------------------------------
-*/
+client = MongoClient("mongodb://localhost:27017")
 
-db.fraud_events.insertMany([
-{
-    transaction_id: "tx_100008",
-    merchant_id: "m_006",
-    customer_id: "c_008",
-    timestamp: ISODate("2026-01-01T10:12:00Z"),
-    fraud_signals: {
-        score: 0.83,
-        model_version: "xgb-v2.3",
-        features: {
-            velocity_1h: 14,
-            amount_zscore: 3.1,
-            ip_risk: 0.84,
-            device_fingerprint_match: false
-        }
-    },
-    decision: "block",
-    reviewed_by: "auto",
-    ttl_expires_at: ISODate("2026-04-01T00:00:00Z")
-},
-{
-    transaction_id: "tx_100010",
-    merchant_id: "m_003",
-    customer_id: "c_009",
-    timestamp: ISODate("2026-01-01T10:25:00Z"),
-    fraud_signals: {
-        score: 0.94,
-        model_version: "xgb-v2.3",
-        features: {
-            velocity_1h: 18,
-            amount_zscore: 4.5,
-            ip_risk: 0.95,
-            device_fingerprint_match: false
-        }
-    },
-    decision: "block",
-    reviewed_by: "auto",
-    ttl_expires_at: ISODate("2026-04-01T00:00:00Z")
-}
-]);
+db = client["stripe_demo"]
 
-/*
-----------------------------------
-user_sessions
-----------------------------------
-*/
+# --------------------------------------------------
+# fraud_events
+# --------------------------------------------------
 
-db.user_sessions.insertOne({
-    session_id: "s_001",
-    customer_id: "c_001",
-    started_at: ISODate("2026-01-01T09:10:00Z"),
-    device: {
-        type: "mobile",
-        os: "iOS",
-        browser: "Safari"
-    },
-    events: [
-        {
-            type: "page_view",
-            path: "/checkout",
-            ts: ISODate("2026-01-01T09:11:00Z")
+db.fraud_events.insert_many([
+    {
+        "transaction_id": "tx_100008",
+        "merchant_id": "m_006",
+        "customer_id": "c_008",
+        "timestamp": datetime.fromisoformat("2026-01-01T10:12:00"),
+        "fraud_signals": {
+            "score": 0.83,
+            "model_version": "xgb-v2.3",
+            "features": {
+                "velocity_1h": 14,
+                "amount_zscore": 3.1,
+                "ip_risk": 0.84,
+                "device_fingerprint_match": False
+            }
         },
+        "decision": "block",
+        "reviewed_by": "auto",
+        "ttl_expires_at": datetime.fromisoformat("2026-04-01T00:00:00")
+    }
+])
+
+# --------------------------------------------------
+# user_sessions
+# --------------------------------------------------
+
+db.user_sessions.insert_one({
+    "session_id": "s_001",
+    "customer_id": "c_001",
+    "started_at": datetime.fromisoformat("2026-01-01T09:10:00"),
+    "device": {
+        "type": "mobile",
+        "os": "iOS",
+        "browser": "Safari"
+    },
+    "events": [
         {
-            type: "payment_attempt",
-            amount: 149.99,
-            ts: ISODate("2026-01-01T09:15:00Z")
+            "type": "page_view",
+            "path": "/checkout"
         }
     ],
-    converted: true,
-    funnel_stage: "payment_success"
-});
+    "converted": True,
+    "funnel_stage": "payment_success"
+})
 
-/*
-----------------------------------
-app_logs
-----------------------------------
-*/
+# --------------------------------------------------
+# app_logs
+# --------------------------------------------------
 
-db.app_logs.insertOne({
-    level: "ERROR",
-    service: "payment-processor",
-    message: "Timeout connecting to issuer bank",
-    context: {
-        merchant_id: "m_003",
-        latency_ms: 5120
+db.app_logs.insert_one({
+    "level": "ERROR",
+    "service": "payment-processor",
+    "message": "Timeout connecting to issuer bank",
+    "context": {
+        "merchant_id": "m_003",
+        "latency_ms": 5120
     },
-    created_at: ISODate("2026-01-01T10:20:00Z")
-});
+    "created_at": datetime.utcnow()
+})
 
-/*
-----------------------------------
-Indexes
-----------------------------------
-*/
+# --------------------------------------------------
+# Indexes
+# --------------------------------------------------
 
-db.fraud_events.createIndex(
-    { merchant_id: 1, timestamp: -1 }
-);
+db.fraud_events.create_index(
+    [("merchant_id", 1), ("timestamp", -1)]
+)
 
-db.fraud_events.createIndex(
-    { "fraud_signals.score": 1 }
-);
+db.fraud_events.create_index(
+    [("fraud_signals.score", 1)]
+)
 
-db.fraud_events.createIndex(
-    { ttl_expires_at: 1 },
-    { expireAfterSeconds: 0 }
-);
+db.fraud_events.create_index(
+    [("ttl_expires_at", 1)],
+    expireAfterSeconds=0
+)
 
-db.user_sessions.createIndex(
-    { customer_id: 1, started_at: -1 }
-);
+db.user_sessions.create_index(
+    [("customer_id", 1), ("started_at", -1)]
+)
 
-db.app_logs.createIndex(
-    { created_at: 1 },
-    { expireAfterSeconds: 2592000 }
-);
+db.app_logs.create_index(
+    [("created_at", 1)],
+    expireAfterSeconds=2592000
+)
 
-print("Stripe demo MongoDB initialised successfully.");
+print("MongoDB demo dataset successfully loaded.")

@@ -6,23 +6,17 @@ Enonce-stripe.md
 pipeline/airflow/generate_gdpr_report
 *.bak
 .env
+.venv/
 secrets
 stripe-business-case.md
 # Credentials
-*.env
 *password*
 *secret*
 *credentials*
 *.pem
 *.key
-.env, 
 *.pem, 
 secrets.yml
 .checkpoint-*.json
-.venv/
 __pycache__/
-*.pyc
 .pytest_cache/
-*.log
-*.egg-info/ 
-dist/
