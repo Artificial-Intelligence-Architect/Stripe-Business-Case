@@ -634,8 +634,8 @@ Access the UIs:
 - **Airflow**: `http://localhost:8080` (username: `airflow`, password: `airflow`)
 
 
-
 ---
+
 ## 🚀 Deployment Guide
 
 For a **detailed, step-by-step deployment guide**, refer to the dedicated document:
@@ -669,11 +669,11 @@ docker-compose -f demo/local_setup/docker-compose.yml up -d
 
 Services launched:
 
-- PostgreSQL + Citus (OLTP)
-- MongoDB Atlas (NoSQL)
-- Kafka + Zookeeper (Streaming)
-- Airflow (Orchestration)
-- Debezium (CDC)
+- **PostgreSQL + Citus (OLTP)**
+- **MongoDB Atlas (NoSQL)**
+- **Kafka + Zookeeper (Streaming)**
+- **Airflow (Orchestration)**
+- **Debezium (CDC)**
 
 #### 3. Verify Services
 |Service    |URL                       |Credentials                          |
@@ -698,7 +698,7 @@ docker exec -it kafka-container kafka-topics --list --bootstrap-server localhost
 ### ☁️ Cloud Deployment (AWS Example)
 #### 1. Set Up Infrastructure
 
-# Snowflake: Create a free trial account and configure:
+##### Snowflake: Create a free trial account and configure:
 
 A database (STRIPE_DB)
 A warehouse (ANALYTICS_WH)
@@ -709,17 +709,17 @@ Kafka: Use Confluent Cloud or deploy on EC2.
 
 #### 2. Configure Environment Variables
 Create a .env file in the root directory:
-# Snowflake
+##### Snowflake
 SNOWFLAKE_ACCOUNT=your-account
 SNOWFLAKE_USER=your-user
 SNOWFLAKE_PASSWORD=your-password
 SNOWFLAKE_DATABASE=STRIPE_DB
 SNOWFLAKE_WAREHOUSE=ANALYTICS_WH
 
-# MongoDB Atlas
+##### MongoDB Atlas
 MONGO_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/stripe?retryWrites=true&w=majority
 
-# Kafka
+##### Kafka
 KAFKA_BOOTSTRAP_SERVERS=your-kafka-brokers:9092
 
 #### 3. Deploy with Terraform (Optional)
@@ -732,7 +732,7 @@ terraform apply
 cd pipeline/dbt/stripe_dbt
 dbt run --profiles-dir .
 
-🔍 Troubleshooting
+#### 🔍 Troubleshooting
 |Issue                              |Solution                                                           |
 |-----------------------------------|-------------------------------------------------------------------|
 |Docker containers fail to start    |Check logs: docker logs <container_name>                           |
@@ -740,15 +740,15 @@ dbt run --profiles-dir .
 |Airflow DAG fails                  |Check logs in Airflow UI or docker logs airflow-worker             |
 |Kafka topics not created           |Ensure Zookeeper is running: docker ps                             |
 
-✅ Validation
+#### ✅ Validation
 
-OLTP: Run a test query on PostgreSQL:
+##### OLTP: Run a test query on PostgreSQL:
 SELECT COUNT(*) FROM transactions;
 
-OLAP: Verify Snowflake tables:
+##### OLAP: Verify Snowflake tables:
 SELECT * FROM OLAP_SCHEMA.fact_transactions LIMIT 10;
 
-NoSQL: Check MongoDB collections:
+##### NoSQL: Check MongoDB collections:
 use stripe;
 db.fraud_events.findOne();
 
