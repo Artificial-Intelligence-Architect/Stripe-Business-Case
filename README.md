@@ -16,7 +16,7 @@
 
 ## 📌 Table of Contents
 
-1. [Executive Summary](https://github.com/Artificial-Intelligence-Architect/Stripe-Business-Case#-data-pipeline)
+1. [Executive Summary](#-executive-summary)
 2. [Repository Structure](#repository-structure)
 3. [Architecture Overview](#architecture-overview)
 4. [OLTP Model — PostgreSQL](#oltp-model--postgresql)
@@ -31,7 +31,7 @@
 13. [Proof of Functionality](#proof-of-functionality)
 14. [Local Setup & Quick Start](#local-setup--quick-start)
 15. [Deployment Guide](#deployment-guide)
-16. [Glossary](#glossary)
+16. [Glossary](#-glossary)
 
 --- 
 
