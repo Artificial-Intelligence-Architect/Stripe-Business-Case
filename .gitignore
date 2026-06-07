@@ -21,3 +21,4 @@ secrets.yml
 __pycache__/
 .pytest_cache/
 secrets/.venv/
+.coverage
