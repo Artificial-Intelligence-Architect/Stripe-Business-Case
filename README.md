@@ -15,19 +15,27 @@
 > **AIA Certification Project | Data Engineering**
 > **Data Engineer — Architecture Proposal**
 
+## 📚 Documentation by audience
+
+| Level                 | Audience                  | Reading time  | Link                                                                  |
+|-----------------------|---------------------------|---------------|-----------------------------------------------------------------------|
+| 🟢 **Simple**         | C-level, product managers | 10 min        | [Executive summary](docs/00_overview/01_SIMPLE_README.md)             |
+| 🟡 **Intermediate**   | Architects, tech leads    | 30 min        | [Architecture deep dive](docs/00_overview/02_INTERMEDIATE_README.md)  |
+| 🔴 **Detailed**       | Engineers, reviewers      | Complete      | [Full documentation](docs/00_overview/03_DETAILED_README.md)          |
+
 --- 
 
 ## 📌 Table of Contents
 
-1. [Executive Summary](#-executive-summary)
-2. [Repository Structure](#-repository-structure)
-3. [Architecture Overview](#️-architecture-overview)
-4. [OLTP Model — PostgreSQL](#️-oltp-model--postgresql)
-5. [OLAP Model — Star Schema](#-olap-model--star-schema)
-6. [NoSQL Model — MongoDB](#️-nosql-model--mongodb)
-7. [Data Pipeline](#-data-pipeline)
-8. [Security & Compliance](#-security--compliance)
-9. [Machine Learning Integration](#-machine-learning-integration)
+1.  [Executive Summary](#-executive-summary)
+2.  [Repository Structure](#-repository-structure)
+3.  [Architecture Overview](#️-architecture-overview)
+4.  [OLTP Model — PostgreSQL](#️-oltp-model--postgresql)
+5.  [OLAP Model — Star Schema](#-olap-model--star-schema)
+6.  [NoSQL Model — MongoDB](#️-nosql-model--mongodb)
+7.  [Data Pipeline](#-data-pipeline)
+8.  [Security & Compliance](#-security--compliance)
+9.  [Machine Learning Integration](#-machine-learning-integration)
 10. [SQL & NoSQL Queries](#-sql--nosql-queries)
 11. [Technology Choices & Justifications](#-technology-choices--justifications)
 12. [Performance & Metrics](#-performance--metrics)
@@ -593,6 +601,10 @@ For a **detailed comparison** of the technological alternatives evaluated (Snowf
 | PostgreSQL         | TPS (Transactions/sec)     | 10,000+ |
 | Kafka              | Throughput (msg/sec)       | 1M+     |
 | Snowflake          | Query Latency (p99)        | < 1 s   |
+
+## Business Impact
+
+For detailed ROI analysis, see [Business Impact & ROI](docs/12_business_impact.md).
 
 --- 
 
