@@ -133,7 +133,7 @@ def compute_merchant_fraud_rates(df_transactions):
                   .partitionBy("merchant_id")
                   .orderBy(F.col("created_at").cast("long"))
                   .rangeBetween(-604800, 0))
-    return (df_transactions
+    return ((df_transactions
             .withColumn("is_fraud_int", F.col("is_fraud").cast("integer"))
             .withColumn("fraud_rate_7d",
                 F.when(
@@ -141,6 +141,7 @@ def compute_merchant_fraud_rates(df_transactions):
                     F.sum("is_fraud_int").over(w_merch_7d) / F.count("transaction_id").over(w_merch_7d)
                 ).otherwise(F.lit(0.0))
             )
+            .orderBy(F.col("created_at").desc())
             .select("merchant_id", "fraud_rate_7d")
-            .dropDuplicates(["merchant_id"]
+            .dropDuplicates(["merchant_id"])
 ))
