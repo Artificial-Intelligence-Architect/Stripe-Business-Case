@@ -20,3 +20,4 @@ secrets.yml
 .checkpoint-*.json
 __pycache__/
 .pytest_cache/
+secrets/.venv/
