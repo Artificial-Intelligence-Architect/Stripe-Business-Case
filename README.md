@@ -74,7 +74,7 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 
 ```
 Stripe-Business-Case/
-├── demo/
+├── demo
 │   ├── local_setup
 │   │   ├── docker-compose.yml
 │   │   ├── init_mongo.py
@@ -101,6 +101,7 @@ Stripe-Business-Case/
 │   ├── 09_observability.md
 │   ├── 10_runbooks.md
 │   ├── 11_architecture_decisions.md
+│   ├── 12_business_impact.md
 │   ├── architecture_diagram.png
 │   ├── data_ingestion.png
 │   ├── data_pipeline.mermaid
@@ -127,6 +128,7 @@ Stripe-Business-Case/
 │       └── sample_documents.json
 ├── pipeline
 │   ├── airflow
+│   │   ├── generate_gdpr_report
 │   │   └── stripe_daily_etl.py
 │   ├── dbt
 │   │   └── stripe_dbt
@@ -154,11 +156,17 @@ Stripe-Business-Case/
 │   ├── debezium
 │   │   ├── debezium-postgres-connector.json
 │   │   └── postgres-cdc-setup.sql
-│   └── flink
-│       └── fraud_detection_job.py
+│   ├── flink
+│   │   └── fraud_detection_job.py
+│   ├── fraud_detection
+│   │   └── architecture.md
+│   └── streaming
+│       └── README.md
 ├── README.md
+├── readme-stripe-business-case-clean-version.md
 ├── requirements-dev.txt
 ├── requirements.txt
+├── secrets
 ├── sql
 │   ├── olap
 │   │   ├── queries_analytics.sql
