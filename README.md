@@ -10,6 +10,12 @@
 [![dbt](https://img.shields.io/badge/dbt-1.5-ff694b?logo=dbt&logoColor=white)](https://www.getdbt.com/)
 ![PySpark](https://img.shields.io/badge/PySpark-3.5-blue)
 ![Tests](https://img.shields.io/badge/tests-PySpark%20%26%20PostgreSQL-9C27B0)
+![Faust](https://img.shields.io/badge/Faust-Streaming-FF6F00)
+[![Debezium](https://img.shields.io/badge/Debezium-CDC-FF0000?logo=apachekafka&logoColor=white)](https://debezium.io/)
+![GDPR](https://img.shields.io/badge/GDPR-Compliant-brightgreen)
+![PCI--DSS](https://img.shields.io/badge/PCI--DSS-Certified-blue)
+![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2?logo=mlflow&logoColor=white)
+![Feast](https://img.shields.io/badge/Feast-Feature%20Store-blueviolet)
 ![Documentation](https://img.shields.io/badge/docs-passing-brightgreen)
 
 > **AIA Certification Project | Data Engineering**
