@@ -105,9 +105,16 @@ Stripe-Business-Case/
 │   ├── architecture_diagram.png
 │   ├── data_ingestion.png
 │   ├── data_pipeline.mermaid
+│   ├── data_pipeline.png
 │   ├── deployment-guide-stripe-data-architecture.md
 │   ├── distributed_conflict_resolution.md
+│   ├── docs
+│   │   ├── 00_overview.md
+│   │   ├── 01_SIMPLE_README.md
+│   │   ├── 02_INTERMEDIATE_README.md
+│   │   └── 03_DETAILED_README.md
 │   ├── erd_oltp.mermaid
+│   ├── erd_oltp.png
 │   ├── stripe-olap-star-schema-erd.md
 │   └── technological-alternatives-evaluated.md
 ├── LICENSE
@@ -163,10 +170,10 @@ Stripe-Business-Case/
 │   └── streaming
 │       └── README.md
 ├── README.md
-├── readme-stripe-business-case-clean-version.md
 ├── requirements-dev.txt
 ├── requirements.txt
 ├── secrets
+│   └── README.md
 ├── sql
 │   ├── olap
 │   │   ├── queries_analytics.sql
@@ -187,7 +194,6 @@ Stripe-Business-Case/
     │   └── test_oltp_queue.cpython-310-pytest-9.0.3.pyc
     ├── test_feature_engineering.py
     └── test_oltp_queue.py
-
 ```
 
 --- 
