@@ -100,7 +100,10 @@ def test_simple_merchant_fraud_rates(spark):
     assert result_dict["merch2"] == 0.0
 
 def _make_transactions(spark):
-    from pyspark.sql.types import BooleanType, DoubleType, StringType, StructField, StructType, TimestampType
+    """DataFrame de base réutilisé dans les deux tests complémentaires."""
+    from pyspark.sql.types import (
+        BooleanType, DoubleType, StringType, StructField, StructType, TimestampType,
+    )
     from datetime import datetime
     schema = StructType([
         StructField("transaction_id",           StringType()),
@@ -123,14 +126,14 @@ def _make_transactions(spark):
 
 
 def test_compute_fraud_features_no_merchant_stats(spark):
-    """Couvre ligne 107 : df_merchant_stats=None -> merchant_fraud_rate_7d doit etre null."""
+    """Couvre ligne 107 : df_merchant_stats=None → merchant_fraud_rate_7d doit être null."""
     from ml.feature_engineering import compute_fraud_features
     df = _make_transactions(spark)
     result_df = compute_fraud_features(df, df_merchant_stats=None)
     rows = {r["transaction_id"]: r for r in result_df.collect()}
     assert "merchant_fraud_rate_7d" in result_df.columns
     for tx_id, row in rows.items():
-        assert row["merchant_fraud_rate_7d"] is None, f"Doit etre None pour {tx_id}"
+        assert row["merchant_fraud_rate_7d"] is None, f"Doit être None pour {tx_id}"
     assert rows["tx1"]["geo_mismatch"] == 0
     assert rows["tx1"]["device_fingerprint_match"] == 1
 
@@ -141,8 +144,6 @@ def test_compute_merchant_fraud_rates_production(spark):
     df = _make_transactions(spark)
     result = compute_merchant_fraud_rates(df)
     rates = {r["merchant_id"]: round(r["fraud_rate_7d"], 4) for r in result.collect()}
-    assert "merch1" in rates
-    assert "merch2" in rates
     assert rates["merch1"] == 0.5, f"Attendu 0.5, obtenu {rates['merch1']}"
     assert rates["merch2"] == 0.0, f"Attendu 0.0, obtenu {rates['merch2']}"
-    assert result.count() == 2
+    assert result.count() == 2, "dropDuplicates doit retourner 1 ligne par merchant"
