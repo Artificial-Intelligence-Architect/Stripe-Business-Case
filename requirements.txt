@@ -1,20 +1,28 @@
-pandas>=2.0,<3.0
-pyspark>=3.5,<4.0
-evidently>=0.4,<1.0
+# Runtime dependencies - Stripe Business Case
+# Planchers releves au-dessus des versions vulnerables (Dependabot).
+# Voir docs/15_dependency_security.md pour la strategie de triage.
 
-apache-airflow>=2.8,<3.0
-apache-airflow-providers-snowflake>=5.0,<6.0
+# Data processing
+pandas>=2.2.0,<3.0
+pyspark>=3.5.3,<4.0
+evidently>=0.4.12,<1.0
 
+# Orchestration - Airflow
+apache-airflow>=2.10.3,<3.0
+apache-airflow-providers-snowflake>=5.8.0,<6.0
+
+# Transformation
 dbt-core>=1.7,<2.0
 dbt-snowflake>=1.7,<2.0
 
+# Snowflake
 snowflake-connector-python>=3.0,<4.0
 snowflake-sqlalchemy>=1.5,<2.0
 
-pytest>=7.0,<9.0
+# Database driver
+psycopg2-binary>=2.9.9,<3.0
+
+# Testing
+pytest>=8.3.2,<9.0
 pytest-cov>=4.0,<6.0
 pytest-mock>=3.0,<4.0
-
-pytest==8.2.0
-pyspark==3.5.1
-psycopg2-binary==2.9.9
