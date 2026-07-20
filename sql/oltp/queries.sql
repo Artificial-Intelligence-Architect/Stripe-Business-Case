@@ -16,6 +16,7 @@
 -- ------------------------------------------------------------
 WITH tx_velocity_1h AS (
     SELECT
+        merchant_id,
         customer_id,
         COUNT(*)                                    AS tx_count_1h,
         SUM(amount_usd)                             AS amount_usd_1h,
@@ -24,7 +25,7 @@ WITH tx_velocity_1h AS (
         COUNT(DISTINCT ip_country)                  AS distinct_countries
     FROM transactions
     WHERE created_at >= NOW() - INTERVAL '1 hour'
-    GROUP BY customer_id
+    GROUP BY merchant_id, customer_id
 )
 SELECT
     v.customer_id,
@@ -41,7 +42,9 @@ SELECT
         ELSE 'MEDIUM'
     END                          AS risk_level
 FROM tx_velocity_1h v
-JOIN customers c USING (customer_id)
+-- Composite join key: customers is keyed (merchant_id, customer_id) under Citus,
+-- and this makes the join single-shard (colocated) instead of cross-shard.
+JOIN customers c ON c.merchant_id = v.merchant_id AND c.customer_id = v.customer_id
 WHERE v.tx_count_1h > 10
    OR v.amount_usd_1h > 5000
 ORDER BY v.max_fraud_score DESC, v.amount_usd_1h DESC;
@@ -167,6 +170,7 @@ ORDER BY total_revenue_usd DESC NULLS LAST;
 -- ------------------------------------------------------------
 WITH customer_countries AS (
     SELECT
+        merchant_id,
         customer_id,
         array_agg(DISTINCT ip_country ORDER BY ip_country) AS countries_used,
         COUNT(DISTINCT ip_country)                          AS country_count,
@@ -177,7 +181,7 @@ WITH customer_countries AS (
     FROM transactions
     WHERE created_at >= NOW() - INTERVAL '24 hours'
       AND ip_country IS NOT NULL
-    GROUP BY customer_id
+    GROUP BY merchant_id, customer_id
 )
 SELECT
     cc.customer_id,
@@ -188,7 +192,7 @@ SELECT
     ROUND(cc.total_amount_usd, 2)   AS total_amount_usd,
     EXTRACT(EPOCH FROM (cc.last_tx - cc.first_tx)) / 60 AS span_minutes
 FROM customer_countries cc
-JOIN customers c USING (customer_id)
+JOIN customers c ON c.merchant_id = cc.merchant_id AND c.customer_id = cc.customer_id
 WHERE cc.country_count > 2
 ORDER BY cc.country_count DESC, cc.total_amount_usd DESC;
 

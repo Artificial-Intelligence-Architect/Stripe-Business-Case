@@ -1,0 +1,50 @@
+# ============================================================
+# Kit de validation runtime — Stripe Business Case
+# ============================================================
+# Fait tourner PostgreSQL et MongoDB en local pour PROUVER que
+# le schéma se charge et que les contrôles de sécurité mordent.
+#
+# Usage:
+#   cd validation
+#   docker compose up -d
+#   ./run_postgres_validation.sh     # charge le schéma + test RBAC
+#   ./run_mongo_validation.sh        # collections + transaction multidoc
+#   docker compose down -v           # nettoyage
+#
+# Note Citus : le schéma utilise la syntaxe Citus mais les lignes
+# create_distributed_table() sont commentées. Il se charge donc sur
+# un PostgreSQL standard — parfait pour une démo. Les PK composites,
+# triggers, RLS et grants colonne se comportent à l'identique.
+# ============================================================
+services:
+  postgres:
+    image: postgres:15
+    container_name: stripe_oltp
+    environment:
+      POSTGRES_USER: stripe_admin
+      POSTGRES_PASSWORD: demo_password_change_me
+      POSTGRES_DB: stripe_db
+    ports:
+      - "5433:5432"          # 5433 en hôte pour éviter un conflit avec un PG local
+    volumes:
+      - ../sql:/sql:ro        # schémas montés en lecture seule
+      - ./seed:/seed:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stripe_admin -d stripe_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  mongodb:
+    image: mongo:7
+    container_name: stripe_nosql
+    command: ["--replSet", "rs0"]   # replica set requis pour les transactions multidoc
+    ports:
+      - "27018:27017"        # 27018 en hôte
+    volumes:
+      - ../nosql:/nosql:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 3s
+      timeout: 3s
+      retries: 10

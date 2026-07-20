@@ -12,8 +12,8 @@
 ![Tests](https://img.shields.io/badge/tests-PySpark%20%26%20PostgreSQL-9C27B0)
 ![Faust](https://img.shields.io/badge/Faust-Streaming-FF6F00)
 [![Debezium](https://img.shields.io/badge/Debezium-CDC-FF0000?logo=apachekafka&logoColor=white)](https://debezium.io/)
-![GDPR](https://img.shields.io/badge/GDPR-Compliant-brightgreen)
-![PCI--DSS](https://img.shields.io/badge/PCI--DSS-Certified-blue)
+![GDPR](https://img.shields.io/badge/GDPR-by%20design-brightgreen)
+![PCI--DSS](https://img.shields.io/badge/PCI--DSS-SAQ--A%20scope-blue)
 ![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2?logo=mlflow&logoColor=white)
 ![Feast](https://img.shields.io/badge/Feast-Feature%20Store-blueviolet)
 ![Documentation](https://img.shields.io/badge/docs-passing-brightgreen)
@@ -28,6 +28,11 @@
 | 🟢 **Simple**         | C-level, product managers | 10 min        | [Executive summary](docs/00_overview/01_SIMPLE_README.md)             |
 | 🟡 **Intermediate**   | Architects, tech leads    | 30 min        | [Architecture deep dive](docs/00_overview/02_INTERMEDIATE_README.md)  |
 | 🔴 **Detailed**       | Engineers, reviewers      | Complete      | [Full documentation](docs/00_overview/03_DETAILED_README.md)          |
+| ♿ **Accessibility**  | All audiences             | 10 min        | [Accessible documentation (RGAA / WCAG 2.1 AA)](docs/14_accessibility.md) |
+
+> ♿ **Accessibility:** the documentation follows WCAG 2.1 AA / RGAA 4.1 principles —
+> hierarchical headings for screen readers, text alternatives for every diagram,
+> no information conveyed by colour alone. See [`docs/14_accessibility.md`](docs/14_accessibility.md).
 
 --- 
 
@@ -72,7 +77,8 @@ Security is ensured through AES-256/TLS 1.3 encryption, RBAC via Okta, and autom
 - OLTP availability: 99.99% (< 52 minutes of downtime per year)
 - Transaction p99 latency: < 50 ms
 - RPO: 0 (synchronous replication) / RTO: < 30 s (automatic failover)
-- Fraud detected prior to settlement: 100% of transactions
+- Fraud scoring coverage: 100% of transactions scored before authorization
+  (coverage, not recall — the model does not *catch* 100% of fraud; see docs/12)
 
 --- 
 
@@ -108,13 +114,15 @@ Stripe-Business-Case/
 │   ├── 10_runbooks.md
 │   ├── 11_architecture_decisions.md
 │   ├── 12_business_impact.md
+│   ├── 13_gdpr_cross_system_erasure.md
+│   ├── 14_accessibility.md
 │   ├── architecture_diagram.png
 │   ├── data_ingestion.png
 │   ├── data_pipeline.mermaid
 │   ├── data_pipeline.png
 │   ├── deployment-guide-stripe-data-architecture.md
 │   ├── distributed_conflict_resolution.md
-│   ├── docs
+│   ├── 00_overview
 │   │   ├── 00_overview.md
 │   │   ├── 01_SIMPLE_README.md
 │   │   ├── 02_INTERMEDIATE_README.md
@@ -137,6 +145,7 @@ Stripe-Business-Case/
 │   └── mongodb
 │       ├── mongodb_aggregation_queries.py
 │       ├── mongodb_indexes.py
+│       ├── mongodb_multidoc_transactions.py
 │       ├── mongodb_schema.py
 │       └── sample_documents.json
 ├── pipeline

@@ -247,6 +247,78 @@ def query_merchant_anomalies():
     return results
 
 
+# ── Query 6 ───────────────────────────────────────────────────────────────────
+# Customer product affinity by category (last 90 days)
+# PERSONALISATION feature: what a customer actually engages with. This is a
+# core input to the recommender (docs/07) and demonstrates the NoSQL layer
+# answering a "customer personalisation" business question.
+
+def query_customer_category_affinity(customer_id="cus_demo_0001"):
+    print("\n── Query 6: Customer category affinity (personalisation) ──")
+    pipeline = [
+        {
+            "$match": {
+                "customer_id": customer_id,
+                "started_at":  {"$gte": now - timedelta(days=90)},
+            }
+        },
+        # Unwind the clickstream to look at product/category interactions
+        {"$unwind": "$events"},
+        {"$match": {"events.type": {"$in": ["product_view", "add_to_cart", "purchase"]}}},
+        {
+            "$group": {
+                "_id":        "$events.category",
+                "views":      {"$sum": {"$cond": [{"$eq": ["$events.type", "product_view"]}, 1, 0]}},
+                "carts":      {"$sum": {"$cond": [{"$eq": ["$events.type", "add_to_cart"]}, 1, 0]}},
+                "purchases":  {"$sum": {"$cond": [{"$eq": ["$events.type", "purchase"]}, 1, 0]}},
+            }
+        },
+        # Affinity score: purchases weighted highest, then carts, then views
+        {
+            "$addFields": {
+                "affinity_score": {
+                    "$add": [
+                        {"$multiply": ["$purchases", 5]},
+                        {"$multiply": ["$carts", 2]},
+                        "$views",
+                    ]
+                }
+            }
+        },
+        {"$sort": {"affinity_score": -1}},
+        {"$limit": 10},
+    ]
+    results = list(db["user_sessions"].aggregate(pipeline))
+    pprint(results)
+    return results
+
+
+# ── Query 7 ───────────────────────────────────────────────────────────────────
+# Sentiment vs refund correlation (customer feedback analysis)
+# Answers a real personalisation/retention question: do customers who left
+# negative feedback also get refunded more? Uses the full-text/sentiment data
+# in customer_feedback, joined to OLTP refund status via transaction_id.
+
+def query_sentiment_refund_link():
+    print("\n── Query 7: Sentiment vs refund correlation (feedback) ──")
+    pipeline = [
+        {"$match": {"sentiment.label": {"$exists": True}}},
+        {
+            "$group": {
+                "_id":         "$sentiment.label",
+                "count":       {"$sum": 1},
+                "avg_rating":  {"$avg": "$rating"},
+                "avg_nps":     {"$avg": "$nps_score"},
+                "with_txn":    {"$sum": {"$cond": [{"$ne": ["$transaction_id", None]}, 1, 0]}},
+            }
+        },
+        {"$sort": {"_id": 1}},
+    ]
+    results = list(db["customer_feedback"].aggregate(pipeline))
+    pprint(results)
+    return results
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -256,4 +328,6 @@ if __name__ == "__main__":
     query_error_distribution()
     query_model_performance()
     query_merchant_anomalies()
+    query_customer_category_affinity()
+    query_sentiment_refund_link()
     print("\n✅ All queries executed.\n")

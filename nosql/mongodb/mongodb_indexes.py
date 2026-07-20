@@ -1,10 +1,15 @@
 """
 mongodb_indexes.py
 ==================
-Python replacement for nosql/mongodb/index.js
+Standalone index bootstrap for the three CORE telemetry collections
+(fraud_events, user_sessions, app_logs).
 
-Creates all secondary indexes on the 3 collections.
-Safe to run multiple times (create_index is idempotent).
+SCOPE NOTE: mongodb_schema.py is the authoritative setup script — it creates all
+SIX collections (the three core ones plus customer_feedback, dispute_documents,
+recommendations) WITH their validators AND indexes in one pass. This file is a
+lighter, index-only helper kept for the core three, useful when you only need to
+(re)build indexes on an existing database without touching validators. Running
+both is safe: create_index is idempotent. If in doubt, run mongodb_schema.py.
 
 Usage:
     python mongodb_indexes.py

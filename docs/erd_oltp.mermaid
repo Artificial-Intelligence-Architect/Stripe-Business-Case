@@ -1,66 +1,111 @@
 ---
-title: "Stripe OLTP — Entity Relationship Diagram (PostgreSQL)"
+title: "Stripe OLTP — Entity Relationship Diagram (PostgreSQL 15 + Citus)"
 ---
 erDiagram
 
-    %% ── REFERENCE TABLES ────────────────────────────────────
-
+    %% ── REFERENCE TABLES (replicated to every Citus node) ────
     countries {
-        CHAR2       code        PK
+        CHAR2       code         PK
         VARCHAR100  name
         VARCHAR50   region
     }
-
     currencies {
-        CHAR3       code        PK
+        CHAR3       code         PK
         VARCHAR100  name
         NUMERIC186  usd_rate
         TIMESTAMPTZ updated_at
     }
+    product_categories {
+        VARCHAR30   category_code PK
+        VARCHAR100  label
+        CHAR4       mcc          "ISO 18245 Merchant Category Code"
+    }
 
-    %% ── MAIN ENTITIES ────────────────────────────────────────
-
+    %% ── DISTRIBUTED ENTITIES (shard key = merchant_id) ───────
     merchants {
-        UUID        merchant_id  PK
+        UUID        merchant_id  PK "distribution key"
         VARCHAR255  name
         CHAR2       country_code FK
-        VARCHAR20   tier
+        VARCHAR20   tier         "startup|growth|enterprise"
         TIMESTAMPTZ created_at
         BOOLEAN     is_active
     }
-
     customers {
+        UUID        merchant_id  PK "composite — carries shard key"
         UUID        customer_id  PK
-        VARCHAR255  email
-        CHAR64      email_hash
+        VARCHAR255  email            "UNIQUE per merchant"
+        CHAR64      email_hash       "SHA-256, PII-free join key"
         CHAR2       country_code FK
+        BOOLEAN     ccpa_opt_out
+        BOOLEAN     is_erased        "GDPR art.17 tombstone"
         TIMESTAMPTZ created_at
     }
-
-    %% ── TRANSACTIONS (partitioned by created_at) ─────────────
-
-    transactions {
-        UUID        transaction_id  PK
-        TIMESTAMPTZ created_at      PK  "composite PK — partitioning key"
-        UUID        merchant_id     FK
-        UUID        customer_id     FK
-        CHAR3       currency        FK
-        NUMERIC184  amount
-        NUMERIC184  amount_usd          "converted by trigger"
-        VARCHAR50   payment_method
-        VARCHAR20   status              "pending|success|failed|refunded|chargeback"
-        VARCHAR20   device_type
-        CHAR2       ip_country
-        NUMERIC54   fraud_score         "0.00–1.00 — partial index if > 0.7"
+    products {
+        UUID        merchant_id   PK
+        UUID        product_id    PK
+        VARCHAR255  name
+        VARCHAR30   category_code FK
+        NUMERIC184  unit_amount
+        CHAR3       currency      FK
+        BOOLEAN     is_recurring
+        BOOLEAN     is_active
+    }
+    subscriptions {
+        UUID        merchant_id      PK
+        UUID        subscription_id  PK
+        UUID        customer_id      FK
+        UUID        product_id       FK
+        VARCHAR20   status           "trialing|active|past_due|canceled|unpaid|paused"
+        VARCHAR10   billing_interval "day|week|month|year"
+        SMALLINT    interval_count
+        NUMERIC184  unit_amount
+        CHAR3       currency         FK
+        TIMESTAMPTZ current_period_start
+        TIMESTAMPTZ current_period_end
+        TIMESTAMPTZ canceled_at
+        TIMESTAMPTZ created_at
+    }
+    subscription_events {
+        UUID        merchant_id      PK
+        BIGSERIAL   event_id         PK
+        UUID        subscription_id  FK
+        VARCHAR30   event_type       "created|renewed|upgraded|downgraded|canceled|..."
+        VARCHAR20   from_status
+        VARCHAR20   to_status
+        NUMERIC184  mrr_delta_usd    "signed: +expansion / -churn"
+        TIMESTAMPTZ occurred_at
     }
 
-    %% ── AUDIT LOG (append-only) ──────────────────────────────
+    %% ── TRANSACTIONS (distributed + partitioned by created_at) ─
+    transactions {
+        UUID        merchant_id           PK "shard key"
+        UUID        transaction_id        PK
+        TIMESTAMPTZ created_at            PK "partition key"
+        UUID        customer_id           FK
+        VARCHAR20   kind                     "payment|refund|chargeback|chargeback_reversal"
+        UUID        parent_transaction_id    "refund/chargeback → parent payment"
+        TIMESTAMPTZ parent_created_at
+        UUID        subscription_id       FK "NULL for one-off"
+        UUID        product_id            FK
+        NUMERIC184  amount
+        CHAR3       currency              FK
+        NUMERIC184  amount_usd               "FX frozen at write time"
+        NUMERIC186  fx_rate_used
+        VARCHAR50   payment_method
+        VARCHAR20   status                   "pending|success|failed|refunded|partially_refunded|chargeback"
+        VARCHAR20   device_type
+        CHAR2       ip_country
+        NUMERIC54   fraud_score              "0.0000–1.0000"
+    }
 
+    %% ── AUDIT LOG (append-only, colocated by merchant_id) ────
     audit_log {
-        BIGSERIAL   log_id      PK
+        UUID        merchant_id  PK
+        BIGSERIAL   log_id       PK
         VARCHAR50   table_name
-        CHAR1       operation       "I | U | D"
+        CHAR1       operation        "I | U | D"
         UUID        record_id
+        VARCHAR50   reason           "indexed — GDPR/CCPA compliance filter"
         VARCHAR100  changed_by
         TIMESTAMPTZ changed_at
         JSONB       old_values
@@ -68,10 +113,20 @@ erDiagram
     }
 
     %% ── RELATIONSHIPS ────────────────────────────────────────
-
-    countries   ||--o{ merchants    : "country_code"
-    countries   ||--o{ customers    : "country_code"
-    currencies  ||--o{ transactions : "currency"
-    merchants   ||--o{ transactions : "merchant_id"
-    customers   ||--o{ transactions : "customer_id"
-    transactions ||--o{ audit_log   : "triggers → record_id"
+    countries          ||--o{ merchants           : "country_code"
+    countries          ||--o{ customers           : "country_code"
+    currencies         ||--o{ products            : "currency"
+    currencies         ||--o{ subscriptions       : "currency"
+    currencies         ||--o{ transactions        : "currency"
+    product_categories ||--o{ products            : "category_code"
+    merchants          ||--o{ customers           : "merchant_id"
+    merchants          ||--o{ products            : "merchant_id"
+    merchants          ||--o{ subscriptions       : "merchant_id"
+    merchants          ||--o{ transactions        : "merchant_id"
+    customers          ||--o{ subscriptions       : "(merchant_id, customer_id)"
+    customers          ||--o{ transactions        : "(merchant_id, customer_id)"
+    products           ||--o{ subscriptions       : "(merchant_id, product_id)"
+    products           ||--o{ transactions        : "(merchant_id, product_id)"
+    subscriptions      ||--o{ subscription_events : "(merchant_id, subscription_id)"
+    subscriptions      ||--o{ transactions        : "(merchant_id, subscription_id)"
+    transactions       ||--o{ transactions        : "parent_transaction_id (refund lineage)"

@@ -1,23 +1,23 @@
 flowchart TD
     subgraph Sources
-        A[PostgreSQL OLTP\nTransactions, Merchants, Customers]
+        A[PostgreSQL OLTP\ntransactions · subscriptions\nsubscription_events · products\nmerchants · customers]
         B[SDK / API\nStripe Events]
     end
     subgraph Ingestion
         C[Debezium\nCDC from PostgreSQL WAL]
-        D[Kafka Topics\npg.transactions\nstripe.events]
+        D[Kafka Topics\nstripe.public.transactions\nstripe.public.subscriptions\nstripe.gdpr.erasure_requests]
     end
     subgraph Processing
-        E[Faust Job\nFraud Detection\nTumbling Window: 5 min]
+        E[Faust / Flink\nReal-time Fraud Scoring\np99 < 50 ms]
         F[Kafka Connect\nMongoDB Sink]
-        G[Kafka to S3\nSnowpipe]
+        G[Kafka → S3\nSnowpipe]
     end
     subgraph Destinations
-        H[MongoDB Atlas\nfraud_events\nuser_sessions\napp_logs]
-        I[Snowflake\nOLAP: fact_transactions\ndim_tables]
+        H[MongoDB Atlas\nfraud_events · user_sessions\napp_logs · customer_feedback\ndispute_documents · recommendations\n+ GridFS]
+        I[Snowflake OLAP\nfact_transactions\nfact_subscription_events\ndim_* SCD2 · Dynamic Tables]
     end
     subgraph Orchestration
-        J[Airflow + dbt\nBatch ETL\nSchedule: 02:00 UTC\nSLA: H+1]
+        J[Airflow + dbt\nBatch ETL · 02:00 UTC\nvalidate → dbt → freshness assert\n+ independent GDPR/CCPA branch]
     end
     subgraph Monitoring
         K[Evidently AI\nML Model Drift]
@@ -29,7 +29,7 @@ flowchart TD
     D --> E
     D --> F
     D --> G
-    E -->|fraud_score| A
+    E -->|fraud_score writeback| A
     E -->|fraud_events| H
     F -->|Sync| H
     G -->|Snowpipe| I

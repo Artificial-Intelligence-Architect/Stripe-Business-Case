@@ -1,51 +1,82 @@
-   ## Secrets Management
+# 06 — Security & Compliance
 
-   Secrets are never stored in code or environment files committed to Git.
+> This file previously began mid-sentence (no title, indented as a code block)
+> and carried a "Compliance Readiness Scores" table claiming **PCI-DSS 100% —
+> Fully compliant**. A design cannot certify itself; compliance is attested by a
+> QSA/auditor against a running system, not asserted in a README. The scores
+> below are reframed as **design maturity**, which is what this repository can
+> honestly claim.
 
-   Recommended tools:
-   - HashiCorp Vault or AWS Secrets Manager
-   - automatic rotation for database credentials
-   - short-lived tokens for service accounts
+## Encryption
 
-   ## Data Classification
+| Layer | Mechanism |
+|---|---|
+| In transit | TLS 1.3 everywhere (client↔API, API↔DB, inter-service) |
+| At rest | AES-256 — PostgreSQL TDE, Snowflake native, MongoDB Atlas encrypted storage |
+| Key management | AWS KMS; keys rotated every 90 days (procedure below) |
+| Application-level | PAN/CVV never touch our systems — tokenised by Stripe upstream |
 
-   Public:
-   - documentation
+## Secrets management
 
-   Internal:
-   - technical metrics
+Secrets are never stored in code or in environment files committed to Git.
 
-   Confidential:
-   - merchant metadata
-   - analytical aggregates
+- HashiCorp Vault (or AWS Secrets Manager) as the store
+- Automatic rotation for database credentials
+- Short-lived tokens for service accounts (no static long-lived keys)
 
-   Restricted:
-   - customer PII
-   - payment identifiers
-   - fraud signals
+## Access control
 
-   ### KMS Key Rotation (Snowflake & AWS)
+Role-based, least-privilege, enforced in the database itself — see
+`sql/security/rbac_setup.sql`. Four roles: `analyst_read` (column- and
+row-restricted, no PII), `engineer_write` (no DELETE, no audit access),
+`compliance_officer` (full read incl. audit), `ml_service` (feature columns +
+pseudonymous `customer_id` only). Row-Level Security scopes analysts to their own
+merchants. Column privileges are granted per-column, not granted-then-revoked (the
+revoke-after-grant pattern is a no-op in PostgreSQL — documented in that file).
 
-   **Automated procedure every 90 days:**
+## Data classification
 
-   1. Generate a new master key in AWS KMS (alias `stripe-snowflake-key-v2`).
-   2. Update the key policy to authorise Snowflake to use it.
-   3. In Snowflake, run:
-      ```sql
-      ALTER ACCOUNT SET MASTER_KEY = 'new_key_arn';
+| Class | Examples | Controls |
+|---|---|---|
+| **Public** | documentation | none |
+| **Internal** | technical metrics | authenticated access |
+| **Confidential** | merchant metadata, analytical aggregates | RBAC, encrypted at rest |
+| **Restricted** | customer PII, payment identifiers, fraud signals | RBAC + column grants + RLS + audit log + encryption |
 
+## KMS key rotation (every 90 days)
 
-   ## Compliance Readiness Scores
+1. Generate a new master key in AWS KMS (`stripe-snowflake-key-v2`).
+2. Update the key policy to authorise Snowflake.
+3. In Snowflake: `ALTER ACCOUNT SET MASTER_KEY = '<new_key_arn>';`
+4. Re-key active objects; retire the previous key after the grace window.
 
-Based on the implemented controls, here is the estimated compliance maturity:
+## Audit logging
 
-| Regulation         | Readiness | Justification                                                                              | Gap / Action Plan                          |
-|--------------------|-----------|--------------------------------------------------------------------------------------------|--------------------------------------------|
-| **PCI-DSS**        | 100%      | No PAN/CVV stored (Stripe tokenisation). TLS 1.3 + AES-256 encryption. Full access logs.   | ✅ Fully compliant                         |
-| **GDPR**           | 98%       | TTL + anonymisation implemented. Consent tracking. DPA signed.                             | Automated data portability export          |
-| **CCPA**           | 95%       | Opt-out available. No data selling.                                                        | Automate "Do Not Sell" response            |
-| **SOC 2 Type II**  | 92%       | Security controls documented. Access restrictions.                                         | External audit completion (planned 2026)   |
-| **ISO 27001**      | 90%       | ISO policies in place. Defined processes.                                                  | Formal certification (planned 2026)        |
+Every write to `transactions` and `subscriptions` is captured in an append-only
+`audit_log` (enforced by trigger — UPDATE/DELETE on the log raise). Compliance
+events carry an indexed `reason` column so the daily report filters on it directly
+rather than on a JSONB path. See `sql/oltp/schema.sql`.
 
-> **Note**: Scores reflect current architecture capabilities as of June 2025.  
-> The 2-10% gaps are either one-time implementation tasks (portability, Do Not Sell automation) or external certification timelines (SOC 2, ISO 27001).
+## GDPR
+
+Erasure is implemented across **all** systems, not just PostgreSQL — the design's
+hardest problem and the one most projects skip. Full treatment in
+`13_gdpr_cross_system_erasure.md`. Data portability (art.20) is implemented as
+`gdpr_export_customer()` in `sql/security/gdpr_erasure.sql`.
+
+## Compliance design maturity
+
+Not an audit result — a self-assessment of how much of each framework the
+**design** addresses. Real compliance requires an external assessor against a
+running system.
+
+| Framework | Design coverage | What is in place | What a real attestation still needs |
+|---|---|---|---|
+| **PCI-DSS** | SAQ-A scope | No PAN/CVV stored (Stripe tokenisation removes them from scope); TLS 1.3 + AES-256; full access logging | QSA assessment; network segmentation evidence; pen-test |
+| **GDPR** | High | Cross-system erasure, portability export, consent/DPA model, audit trail | DPO sign-off; DPIA on the fraud model |
+| **CCPA** | High | Opt-out flag + procedure; no data selling; access/deletion requests | "Do Not Sell" UX; verification workflow hardening |
+| **SOC 2 Type II** | Partial | Controls documented; access restrictions | External audit over a 6-12 month observation window |
+| **ISO 27001** | Partial | Policies and processes defined | Formal certification body |
+
+> The gaps are deliberately shown. A design claiming to be "100% compliant" before
+> any external assessment is a red flag; this table is the honest version.
