@@ -1,0 +1,8 @@
+# Alert rules for Prometheus
+# See docs/09_observability.md for full configuration
+groups:
+  - name: oltp.critical
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
