@@ -1,8 +1,69 @@
-# Alert rules for Prometheus
-# See docs/09_observability.md for full configuration
+# ==============================================================================
+# Prometheus Alert Rules — Stripe Data Architecture
+# ==============================================================================
+# Full documentation: docs/09_observability.md
+
 groups:
+  # CRITICAL: Impacts all users
   - name: oltp.critical
+    interval: 15s
     rules:
       - alert: PostgreSQLDown
         expr: pg_up == 0
         for: 1m
+        annotations:
+          severity: critical
+          summary: "PostgreSQL instance DOWN"
+          runbook: "docs/10_runbooks.md#1-postgresql-down"
+
+      - alert: ReplicationLagIncreasing
+        expr: pg_replication_lag_seconds > 0.5
+        for: 2m
+        annotations:
+          severity: critical
+          summary: "PostgreSQL replication lag {{ $value }}s (should be 0)"
+          runbook: "docs/10_runbooks.md#2-replication-lag--0"
+
+      - alert: ConnectionPoolExhausted
+        expr: pg_stat_activity_count / pg_settings_max_connections > 0.9
+        for: 1m
+        annotations:
+          severity: critical
+          summary: "PostgreSQL connection pool 90%+ full"
+          runbook: "docs/10_runbooks.md#3-connection-pool-exhausted"
+
+  # HIGH: Degraded performance
+  - name: kafka.high
+    interval: 30s
+    rules:
+      - alert: ConsumerLagHigh
+        expr: kafka_consumer_lag_sum > 100000
+        for: 5m
+        annotations:
+          severity: high
+          summary: "Kafka consumer lag {{ $value }} messages"
+          runbook: "docs/10_runbooks.md#4-kafka-consumer-lag-high"
+
+  # AIRFLOW
+  - name: airflow.high
+    interval: 1m
+    rules:
+      - alert: AirflowDAGMissedSLA
+        expr: airflow_dag_sla_miss == 1
+        for: 0m
+        annotations:
+          severity: high
+          summary: "Airflow DAG missed SLA"
+          runbook: "docs/10_runbooks.md#5-airflow-dag-missed-sla"
+
+  # ML
+  - name: ml.high
+    interval: 1m
+    rules:
+      - alert: FraudDetectionLatencyHigh
+        expr: histogram_quantile(0.99, rate(fastapi_request_duration_seconds_bucket{endpoint="/fraud/score"}[5m])) > 0.1
+        for: 3m
+        annotations:
+          severity: high
+          summary: "Fraud detection inference latency high"
+          runbook: "docs/10_runbooks.md#6-high-query-latency"
