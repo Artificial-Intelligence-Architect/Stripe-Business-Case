@@ -48,37 +48,37 @@
 - Status: **COMPLETE** (docs/14_accessibility.md)
 
 ## Repository Structure
-Stripe-Business-Case/
-├── docs/ (16 files)
-│ ├── 01_architecture.md
-│ ├── 02_oltp_model.md
-│ ├── 03_olap_model.md
-│ ├── 04_nosql_model.md
-│ ├── 05_pipeline_architecture.md
-│ ├── 06_security_compliance.md
-│ ├── 07_ml_strategy.md
-│ ├── 08_queries.md
-│ ├── 09_observability.md ← UPDATED
-│ ├── 10_runbooks.md ← UPDATED
-│ ├── 11_architecture_decisions.md
-│ ├── 12_business_impact.md
-│ ├── 13_gdpr_cross_system_erasure.md
-│ ├── 14_accessibility.md
-│ ├── 15_dependency_security.md
-│ ├── 16_presentation_script_5min.md ← NEW
-│ └── (diagrams, ERD, PNG files)
-├── terraform/ (IaC)
-│ ├── main.tf ← NEW
-│ ├── variables.tf ← NEW
-│ ├── outputs.tf ← NEW
-│ └── README.md ← NEW
-├── monitoring/ (Observability config)
-│ ├── prometheus/
-│ │ └── alert_rules.yml ← NEW
-│ ├── grafana/dashboards/
-│ │ └── README.md ← NEW
-│ └── README.md ← NEW
-└── (all other original files)
+Stripe-Business-Case/  
+├── docs/ (16 files)  
+│ ├── 01_architecture.md  
+│ ├── 02_oltp_model.md  
+│ ├── 03_olap_model.md  
+│ ├── 04_nosql_model.md  
+│ ├── 05_pipeline_architecture.md  
+│ ├── 06_security_compliance.md  
+│ ├── 07_ml_strategy.md  
+│ ├── 08_queries.md  
+│ ├── 09_observability.md ← UPDATED  
+│ ├── 10_runbooks.md ← UPDATED  
+│ ├── 11_architecture_decisions.md  
+│ ├── 12_business_impact.md  
+│ ├── 13_gdpr_cross_system_erasure.md  
+│ ├── 14_accessibility.md  
+│ ├── 15_dependency_security.md  
+│ ├── 16_presentation_script_5min.md ← NEW  
+│ └── (diagrams, ERD, PNG files)  
+├── terraform/ (IaC)  
+│ ├── main.tf ← NEW  
+│ ├── variables.tf ← NEW  
+│ ├── outputs.tf ← NEW  
+│ └── README.md ← NEW  
+├── monitoring/ (Observability config)  
+│ ├── prometheus/  
+│ │ └── alert_rules.yml ← NEW  
+│ ├── grafana/dashboards/  
+│ │ └── README.md ← NEW  
+│ └── README.md ← NEW  
+└── (all other original files)  
 
 
 ## Score Estimation
