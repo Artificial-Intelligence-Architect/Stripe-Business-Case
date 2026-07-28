@@ -58,26 +58,26 @@ Stripe-Business-Case/
 │ ├── 06_security_compliance.md  
 │ ├── 07_ml_strategy.md  
 │ ├── 08_queries.md  
-│ ├── 09_observability.md ← UPDATED  
-│ ├── 10_runbooks.md ← UPDATED  
+│ ├── 09_observability.md   
+│ ├── 10_runbooks.md   
 │ ├── 11_architecture_decisions.md  
 │ ├── 12_business_impact.md  
 │ ├── 13_gdpr_cross_system_erasure.md  
 │ ├── 14_accessibility.md  
 │ ├── 15_dependency_security.md  
-│ ├── 16_presentation_script_5min.md ← NEW  
+│ ├── 16_presentation_script_5min.md    
 │ └── (diagrams, ERD, PNG files)  
 ├── terraform/ (IaC)  
-│ ├── main.tf ← NEW  
-│ ├── variables.tf ← NEW  
-│ ├── outputs.tf ← NEW  
-│ └── README.md ← NEW  
+│ ├── main.tf   
+│ ├── variables.tf   
+│ ├── outputs.tf   
+│ └── README.md    
 ├── monitoring/ (Observability config)  
 │ ├── prometheus/  
-│ │ └── alert_rules.yml ← NEW  
+│ │ └── alert_rules.yml   
 │ ├── grafana/dashboards/  
-│ │ └── README.md ← NEW  
-│ └── README.md ← NEW  
+│ │ └── README.md   
+│ └── README.md   
 └── (all other original files)  
 
 

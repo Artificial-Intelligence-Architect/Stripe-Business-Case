@@ -5,12 +5,12 @@
 
 ## 📋 What You Have
 
-✅ **Architecture** (OLTP + OLAP + NoSQL)
-✅ **Infrastructure** (Terraform IaC)
-✅ **Observability** (Prometheus, ELK, Jaeger, SLOs)
-✅ **Incident Response** (Runbooks, escalation)
-✅ **Presentation** (5 min script + 9 slides)
-✅ **Documentation** (16 files, WCAG accessible)
+✅ **Architecture** (OLTP + OLAP + NoSQL)  
+✅ **Infrastructure** (Terraform IaC)  
+✅ **Observability** (Prometheus, ELK, Jaeger, SLOs)  
+✅ **Incident Response** (Runbooks, escalation)  
+✅ **Presentation** (5 min script + 9 slides)  
+✅ **Documentation** (16 files, WCAG accessible)  
 
 ## 🎤 Before Exam (2-3 hours)
 
