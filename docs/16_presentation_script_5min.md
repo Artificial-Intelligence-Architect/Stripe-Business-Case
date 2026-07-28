@@ -48,11 +48,11 @@ Let me walk you through our integrated solution.
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║  STRIPE FINANCIAL DATA ARCHITECTURE                        ║
-║  RNCP38777 — Level 7 (BAC+5)                              ║
+║  RNCP38777 — Level 7 (BAC+5)                               ║
 ║                                                            ║
-║  Architecture: OLTP + OLAP + NoSQL + ML                   ║
-║  Deployment: AWS (Kubernetes, RDS, Snowflake, MongoDB)    ║
-║  Status: Production-Ready                                 ║
+║  Architecture: OLTP + OLAP + NoSQL + ML                    ║
+║  Deployment: AWS (Kubernetes, RDS, Snowflake, MongoDB)     ║
+║  Status: Production-Ready                                  ║
 ║                                                            ║
 ║  Processes: 1B+ transactions/day                           ║
 ║  Supports: 50M+ merchants & customers worldwide            ║
@@ -99,25 +99,25 @@ These requirements shaped every decision in our architecture.
 ╔════════════════════════════════════════════════════════════╗
 ║  BUSINESS REQUIREMENTS → ARCHITECTURE DRIVERS              ║
 ║                                                            ║
-║  🔒 TRANSACTIONAL INTEGRITY                               ║
-║     • 10k TPS, p99 latency < 50ms                         ║
-║     • ACID across distributed nodes (Citus)              ║
-║     • RPO=0, RTO<30s (synchronous replication)           ║
+║  🔒 TRANSACTIONAL INTEGRITY                                ║
+║     • 10k TPS, p99 latency < 50ms                          ║
+║     • ACID across distributed nodes (Citus)                ║
+║     • RPO=0, RTO<30s (synchronous replication)             ║
 ║                                                            ║
 ║  📊 ADVANCED ANALYTICS                                     ║
-║     • Complex queries, < 1s latency (Snowflake)          ║
-║     • 2+ year historical data (Time Travel)               ║
-║     • Real-time dashboards (dbt + Dynamic Tables)        ║
+║     • Complex queries, < 1s latency (Snowflake)            ║
+║     • 2+ year historical data (Time Travel)                ║
+║     • Real-time dashboards (dbt + Dynamic Tables)          ║
 ║                                                            ║
 ║  🤖 FRAUD DETECTION                                        ║
-║     • Score 100% of transactions pre-authorization       ║
-║     • XGBoost inference < 100ms (FastAPI)                ║
-║     • Feature store + continuous monitoring              ║
+║     • Score 100% of transactions pre-authorization         ║
+║     • XGBoost inference < 100ms (FastAPI)                  ║
+║     • Feature store + continuous monitoring                ║
 ║                                                            ║
 ║  ⚖️  COMPLIANCE & SECURITY                                 ║
-║     • GDPR erasure automation                             ║
-║     • PCI-DSS: tokenization, encryption                  ║
-║     • Audit logging on all data access                    ║
+║     • GDPR erasure automation                              ║
+║     • PCI-DSS: tokenization, encryption                    ║
+║     • Audit logging on all data access                     ║
 ╚════════════════════════════════════════════════════════════╝
 ```
 
@@ -159,31 +159,31 @@ Let me drill into each layer.
 │                    HYBRID LAMBDA ARCHITECTURE                   │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  SPEED LAYER (Real-time, < 500ms)                              │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │ PostgreSQL → Debezium CDC → Kafka → Faust Microservices│   │
-│  │ (Feature enrichment, fraud scoring, real-time alerts)  │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  SPEED LAYER (Real-time, < 500ms)                               │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ PostgreSQL → Debezium CDC → Kafka → Faust Microservices │    │
+│  │ (Feature enrichment, fraud scoring, real-time alerts)   │    │
+│  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
-│  BATCH LAYER (Scheduled, H+1 latency)                          │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │ Airflow DAG (02:00 UTC) → Spark/dbt → Snowflake         │   │
-│  │ (Data transformation, aggregations, SCD processing)    │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  BATCH LAYER (Scheduled, H+1 latency)                           │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ Airflow DAG (02:00 UTC) → Spark/dbt → Snowflake         │    │
+│  │ (Data transformation, aggregations, SCD processing)     │    │
+│  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
-│  SERVING LAYER (Query time, < 1s)                              │
-│  ┌──────────────────┬──────────────────┬────────────────────┐  │
-│  │ OLTP             │ OLAP             │ NoSQL              │  │
-│  │ PostgreSQL       │ Snowflake        │ MongoDB Atlas      │  │
-│  │ (Transactions)   │ (Analytics)      │ (Logs, Features)   │  │
-│  │ Citus sharding   │ Star schema      │ Full-text search   │  │
-│  └──────────────────┴──────────────────┴────────────────────┘  │
+│  SERVING LAYER (Query time, < 1s)                               │
+│  ┌──────────────────┬──────────────────┬────────────────────┐   │
+│  │ OLTP             │ OLAP             │ NoSQL              │   │
+│  │ PostgreSQL       │ Snowflake        │ MongoDB Atlas      │   │
+│  │ (Transactions)   │ (Analytics)      │ (Logs, Features)   │   │
+│  │ Citus sharding   │ Star schema      │ Full-text search   │   │
+│  └──────────────────┴──────────────────┴────────────────────┘   │
 │                                                                 │
 │  INFRASTRUCTURE (AWS)                                           │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │ Kubernetes (EKS) → Prometheus/Grafana → PagerDuty        │ │
-│  │ (Orchestration, monitoring, incident response)          │ │
-│  └───────────────────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ Kubernetes (EKS) → Prometheus/Grafana → PagerDuty         │  │
+│  │ (Orchestration, monitoring, incident response)            │  │
+│  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -226,32 +226,32 @@ This setup handles Stripe's global transaction volume reliably.
 
 ```
 ╔════════════════════════════════════════════════════════════╗
-║  OLTP: PostgreSQL + Citus (Horizontal Sharding)           ║
+║  OLTP: PostgreSQL + Citus (Horizontal Sharding)            ║
 ║                                                            ║
 ║  NORMALIZED SCHEMA (3NF)                                   ║
-║  ┌──────────────────────────────────────────────────────┐ ║
-║  │ transactions (1.2B rows)                              │ ║
-║  │   ├─ transaction_id (UUID)                            │ ║
-║  │   ├─ merchant_id ← DISTRIBUTION KEY (Citus sharding) │ ║
-║  │   ├─ customer_id                                      │ ║
-║  │   ├─ amount, currency, payment_method                │ ║
-║  │   ├─ status (pending, success, failed, refunded)     │ ║
-║  │   ├─ fraud_score (0.0-1.0)                           │ ║
-║  │   └─ created_at (partitioned monthly)                │ ║
-║  │                                                       │ ║
-║  │ merchants, customers (reference tables)              │ ║
-║  └──────────────────────────────────────────────────────┘ ║
+║  ┌──────────────────────────────────────────────────────┐  ║
+║  │ transactions (1.2B rows)                             │  ║
+║  │   ├─ transaction_id (UUID)                           │  ║
+║  │   ├─ merchant_id ← DISTRIBUTION KEY (Citus sharding) │  ║
+║  │   ├─ customer_id                                     │  ║
+║  │   ├─ amount, currency, payment_method                │  ║
+║  │   ├─ status (pending, success, failed, refunded)     │  ║
+║  │   ├─ fraud_score (0.0-1.0)                           │  ║
+║  │   └─ created_at (partitioned monthly)                │  ║
+║  │                                                      │  ║
+║  │ merchants, customers (reference tables)              │  ║
+║  └──────────────────────────────────────────────────────┘  ║
 ║                                                            ║
 ║  PERFORMANCE STRATEGIES                                    ║
-║  • Citus sharding: 10k TPS/node, linear scale             ║
-║  • Monthly partitioning: partition pruning, archiving    ║
-║  • Partial indices: fraud_score > 0.7 (80% smaller)     ║
-║  • Synchronous replication: RPO = 0, RTO < 30s          ║
+║  • Citus sharding: 10k TPS/node, linear scale              ║
+║  • Monthly partitioning: partition pruning, archiving      ║
+║  • Partial indices: fraud_score > 0.7 (80% smaller)        ║
+║  • Synchronous replication: RPO = 0, RTO < 30s             ║
 ║                                                            ║
 ║  SLA TARGETS                                               ║
-║  • Availability: 99.99% uptime                            ║
-║  • Latency p99: < 50ms                                    ║
-║  • Connection pool: 300 max (well-tuned for app)         ║
+║  • Availability: 99.99% uptime                             ║
+║  • Latency p99: < 50ms                                     ║
+║  • Connection pool: 300 max (well-tuned for app)           ║
 ╚════════════════════════════════════════════════════════════╝
 ```
 
@@ -293,41 +293,41 @@ Fraud analysis, customer segmentation, compliance reporting all here.
 
 ```
 ╔════════════════════════════════════════════════════════════╗
-║  OLAP: Snowflake (Star Schema)                            ║
+║  OLAP: Snowflake (Star Schema)                             ║
 ║                                                            ║
 ║  STAR SCHEMA DESIGN                                        ║
-║  ┌─────────────────────────────────────────────────────┐  ║
-║  │                                                      │  ║
-║  │        dim_date         dim_merchant                │  ║
-║  │           │                  │                       │  ║
-║  │           └──────┬───────────┘                       │  ║
-║  │                  │                                   │  ║
-║  │      ┌───────────fact_transactions───────────┐     │  ║
-║  │      │                                         │     │  ║
-║  │      ├─────────────────────────────────────┤     │  ║
-║  │      │  • transaction_id                   │     │  ║
-║  │      │  • date_sk, merchant_sk, customer_sk│    │  ║
-║  │      │  • amount_usd, is_fraud             │     │  ║
-║  │      │  • (1.2B rows, partitioned by date) │     │  ║
-║  │      └─────────────────────────────────────┘     │  ║
-║  │                  │                                   │  ║
-║  │           ┌──────┴──────┐                           │  ║
-║  │      dim_customer    dim_payment_method            │  ║
-║  │                                                      │  ║
-║  └─────────────────────────────────────────────────────┘  ║
+║  ┌─────────────────────────────────────────────────────┐   ║
+║  │                                                     │   ║
+║  │        dim_date         dim_merchant                │   ║
+║  │           │                  │                      │   ║
+║  │           └──────┬───────────┘                      │   ║
+║  │                  │                                  │   ║
+║  │      ┌───────────fact_transactions─────────┐        │   ║
+║  │      │                                     │        │   ║
+║  │      ├─────────────────────────────────────┤        │   ║
+║  │      │  • transaction_id                   │        │   ║
+║  │      │  • date_sk, merchant_sk, customer_sk│        │   ║
+║  │      │  • amount_usd, is_fraud             │        │   ║
+║  │      │  • (1.2B rows, partitioned by date) │        │   ║
+║  │      └─────────────────────────────────────┘        │   ║
+║  │                  │                                  │   ║
+║  │           ┌──────┴──────┐                           │   ║
+║  │      dim_customer    dim_payment_method             │   ║
+║  │                                                     │   ║
+║  └─────────────────────────────────────────────────────┘   ║
 ║                                                            ║
 ║  MATERIALIZED LAYERS                                       ║
-║  • Dynamic table: mv_daily_revenue (hourly refresh)      ║
-║  • Dynamic table: mv_customer_rfm (hourly refresh)       ║
-║  • Clustered key: (date_sk, merchant_sk)               ║
+║  • Dynamic table: mv_daily_revenue (hourly refresh)        ║
+║  • Dynamic table: mv_customer_rfm (hourly refresh)         ║
+║  • Clustered key: (date_sk, merchant_sk)                   ║
 ║                                                            ║
 ║  ANALYTICS CAPABILITIES                                    ║
-║  • Revenue analysis (daily, weekly, monthly, YoY)        ║
-║  • Customer segmentation (RFM)                           ║
-║  • Fraud analysis (transaction-level, merchant-level)   ║
-║  • Compliance reporting (audit trails)                   ║
+║  • Revenue analysis (daily, weekly, monthly, YoY)          ║
+║  • Customer segmentation (RFM)                             ║
+║  • Fraud analysis (transaction-level, merchant-level)      ║
+║  • Compliance reporting (audit trails)                     ║
 ║                                                            ║
-║  SLA: < 1s p99 latency (auto-scaling warehouse)          ║
+║  SLA: < 1s p99 latency (auto-scaling warehouse)            ║
 ╚════════════════════════════════════════════════════════════╝
 ```
 
@@ -374,20 +374,20 @@ Business Impact: -40% fraud, $15M annual savings.
 ### Slide Content
 
 ```
-╔════════════════════════════════════════════════════════════╗
-║  ML PIPELINE: Fraud Detection (Real-Time)                 ║
-║                                                            ║
-║  DATA FLOW                                                 ║
-║  MongoDB ────────> Feast Feature Store ─────> MLflow     ║
-║  (raw events)     (200+ features)       (training)        ║
+╔═════════════════════════════════════════════════════════════╗
+║  ML PIPELINE: Fraud Detection (Real-Time)                   ║
+║                                                             ║
+║  DATA FLOW                                                  ║
+║  MongoDB ────────> Feast Feature Store ─────> MLflow        ║
+║  (raw events)     (200+ features)       (training)          ║
 ║       │                                         │           ║
 ║       ▼                                         ▼           ║
-║  fraud_events                            XGBoost Model    ║
-║  (logs, signals)                         (AUC 0.93)       ║
+║  fraud_events                            XGBoost Model      ║
+║  (logs, signals)                         (AUC 0.93)         ║
 ║                                                │            ║
 ║                                                ▼            ║
-║                                          FastAPI Server    ║
-║                                          (50ms inference)  ║
+║                                          FastAPI Server     ║
+║                                          (50ms inference)   ║
 ║                                                │            ║
 ║                                                ▼            ║
 ║                                        Stripe Authorization ║
@@ -397,16 +397,16 @@ Business Impact: -40% fraud, $15M annual savings.
 ║                                        Evidently AI Monitor ║
 ║                                        (drift detection)    ║
 ║                                                             ║
-║  FEATURE STORE (Feast)                                     ║
-║  • Real-time features: txn_count_24h, velocity_flag       ║
-║  • Batch features: avg_amount_30d, geo_anomaly            ║
-║  • Serving latency: < 50ms                                 ║
-║                                                            ║
-║  BUSINESS IMPACT                                           ║
-║  • -40% fraud rate (high-confidence blocks)               ║
-║  • $15M annual fraud savings                              ║
-║  • 99.9% inference availability                           ║
-╚════════════════════════════════════════════════════════════╝
+║  FEATURE STORE (Feast)                                      ║
+║  • Real-time features: txn_count_24h, velocity_flag         ║
+║  • Batch features: avg_amount_30d, geo_anomaly              ║
+║  • Serving latency: < 50ms                                  ║
+║                                                             ║
+║  BUSINESS IMPACT                                            ║
+║  • -40% fraud rate (high-confidence blocks)                 ║
+║  • $15M annual fraud savings                                ║
+║  • 99.9% inference availability                             ║
+╚═════════════════════════════════════════════════════════════╝
 ```
 
 ---
@@ -449,39 +449,39 @@ This setup supports 1B+ daily transactions with 99.99% uptime.
 
 ```
 ╔════════════════════════════════════════════════════════════╗
-║  CLOUD INFRASTRUCTURE (AWS)                               ║
+║  CLOUD INFRASTRUCTURE (AWS)                                ║
 ║                                                            ║
 ║  KUBERNETES CLUSTER (EKS)                                  ║
-║  ┌──────────────────────────────────────────────────────┐ ║
-║  │ 3 worker nodes (t3.2xlarge) → auto-scale to 10      │ ║
-║  │ Services:                                            │ ║
-║  │  • Airflow (orchestration)                           │ ║
-║  │  • Kafka + Zookeeper (event streaming)              │ ║
-║  │  • Prometheus + Grafana (monitoring)                │ ║
-║  │  • Jaeger (distributed tracing)                     │ ║
-║  │  • FastAPI (ML inference server)                    │ ║
-║  └──────────────────────────────────────────────────────┘ ║
+║  ┌──────────────────────────────────────────────────────┐  ║
+║  │ 3 worker nodes (t3.2xlarge) → auto-scale to 10       │  ║
+║  │ Services:                                            │  ║
+║  │  • Airflow (orchestration)                           │  ║
+║  │  • Kafka + Zookeeper (event streaming)               │  ║
+║  │  • Prometheus + Grafana (monitoring)                 │  ║
+║  │  • Jaeger (distributed tracing)                      │  ║
+║  │  • FastAPI (ML inference server)                     │  ║
+║  └──────────────────────────────────────────────────────┘  ║
 ║                                                            ║
 ║  MANAGED SERVICES                                          ║
-║  • RDS Aurora PostgreSQL (3 AZs, 15.3 engine)            ║
-║  • Snowflake (3 compute warehouses)                       ║
-║  • MongoDB Atlas (multi-AZ, sharded)                      ║
-║  • ElastiCache Redis (cache, feature store)              ║
-║  • S3 (data lake, 2-year retention)                       ║
+║  • RDS Aurora PostgreSQL (3 AZs, 15.3 engine)              ║
+║  • Snowflake (3 compute warehouses)                        ║
+║  • MongoDB Atlas (multi-AZ, sharded)                       ║
+║  • ElastiCache Redis (cache, feature store)                ║
+║  • S3 (data lake, 2-year retention)                        ║
 ║                                                            ║
 ║  DEPLOYMENT                                                ║
-║  ✅ Terraform IaC (all infrastructure defined)           ║
-║  ✅ CI/CD pipeline (Git → Deploy)                        ║
-║  ✅ Blue-green deployments (zero downtime)               ║
-║  ✅ Automated backups + disaster recovery                ║
+║  ✅ Terraform IaC (all infrastructure defined)             ║
+║  ✅ CI/CD pipeline (Git → Deploy)                          ║
+║  ✅ Blue-green deployments (zero downtime)                 ║
+║  ✅ Automated backups + disaster recovery                  ║
 ║                                                            ║
 ║  SECURITY POSTURE                                          ║
-║  ✅ AES-256 encryption at rest                           ║
-║  ✅ TLS 1.3 in transit                                   ║
-║  ✅ VPC isolation + network policies                     ║
-║  ✅ RBAC via Okta SSO                                     ║
-║  ✅ Audit logging (CloudTrail)                           ║
-║  ✅ PCI-DSS + GDPR compliant                             ║
+║  ✅ AES-256 encryption at rest                             ║
+║  ✅ TLS 1.3 in transit                                     ║
+║  ✅ VPC isolation + network policies                       ║
+║  ✅ RBAC via Okta SSO                                      ║
+║  ✅ Audit logging (CloudTrail)                             ║
+║  ✅ PCI-DSS + GDPR compliant                               ║
 ╚════════════════════════════════════════════════════════════╝
 ```
 
@@ -531,45 +531,45 @@ RUNBOOKS:
 
 ```
 ╔════════════════════════════════════════════════════════════╗
-║  OBSERVABILITY & INCIDENT MANAGEMENT                      ║
+║  OBSERVABILITY & INCIDENT MANAGEMENT                       ║
 ║                                                            ║
 ║  MONITORING STACK                                          ║
-║  ┌────────────────────────────────────────────────────┐   ║
-║  │                   METRICS                          │   ║
-║  │          Prometheus + Grafana                      │   ║
-║  │  • 1B+ time-series/day                             │   ║
-║  │  • PromQL: latency, throughput, errors            │   ║
-║  │  • 9 production dashboards                         │   ║
-║  └────────────────────────────────────────────────────┘   ║
+║  ┌────────────────────────────────────────────────────┐    ║
+║  │                   METRICS                          │    ║
+║  │          Prometheus + Grafana                      │    ║
+║  │  • 1B+ time-series/day                             │    ║
+║  │  • PromQL: latency, throughput, errors             │    ║
+║  │  • 9 production dashboards                         │    ║
+║  └────────────────────────────────────────────────────┘    ║
 ║                                                            ║
-║  ┌────────────────────────────────────────────────────┐   ║
-║  │                     LOGS                           │   ║
-║  │       ELK Stack (Elasticsearch + Kibana)          │   ║
-║  │  • 1TB+/day ingestion                              │   ║
-║  │  • 30-day hot, 90-day warm retention              │   ║
-║  │  • Root cause analysis via correlation IDs        │   ║
-║  └────────────────────────────────────────────────────┘   ║
+║  ┌────────────────────────────────────────────────────┐    ║
+║  │                     LOGS                           │    ║
+║  │       ELK Stack (Elasticsearch + Kibana)           │    ║
+║  │  • 1TB+/day ingestion                              │    ║
+║  │  • 30-day hot, 90-day warm retention               │    ║
+║  │  • Root cause analysis via correlation IDs         │    ║
+║  └────────────────────────────────────────────────────┘    ║
 ║                                                            ║
-║  ┌────────────────────────────────────────────────────┐   ║
-║  │                    TRACES                          │   ║
-║  │              Jaeger Distributed Tracing           │   ║
-║  │  • 10M+ traces/day (0.1% sample rate)             │   ║
-║  │  • End-to-end transaction visibility              │   ║
-║  │  • Database latency breakdown                      │   ║
-║  └────────────────────────────────────────────────────┘   ║
+║  ┌────────────────────────────────────────────────────┐    ║
+║  │                    TRACES                          │    ║
+║  │              Jaeger Distributed Tracing            │    ║
+║  │  • 10M+ traces/day (0.1% sample rate)              │    ║
+║  │  • End-to-end transaction visibility               │    ║
+║  │  • Database latency breakdown                      │    ║
+║  └────────────────────────────────────────────────────┘    ║
 ║                                                            ║
 ║  SLO TARGETS & ALERTS                                      ║
-║  • OLTP availability: 99.99% (CRITICAL alert on breach)  ║
-║  • Transaction latency p99: < 50ms (HIGH alert: > 100ms) ║
-║  • Replication lag: 0 (CRITICAL: lag > 0.5s)            ║
-║  • ETL completion: by 06:00 UTC (HIGH alert on miss)     ║
-║  • ML inference: < 100ms p99 (CRITICAL: > 200ms)        ║
+║  • OLTP availability: 99.99% (CRITICAL alert on breach)    ║
+║  • Transaction latency p99: < 50ms (HIGH alert: > 100ms)   ║
+║  • Replication lag: 0 (CRITICAL: lag > 0.5s)               ║
+║  • ETL completion: by 06:00 UTC (HIGH alert on miss)       ║
+║  • ML inference: < 100ms p99 (CRITICAL: > 200ms)           ║
 ║                                                            ║
 ║  INCIDENT RESPONSE                                         ║
-║  • Alert → Slack → PagerDuty → On-call engineer         ║
-║  • MTTR target: 5 min (CRITICAL), 10 min (HIGH)          ║
-║  • Runbooks + escalation procedures (docs/10_runbooks)  ║
-║  • Post-mortems within 24h                               ║
+║  • Alert → Slack → PagerDuty → On-call engineer            ║
+║  • MTTR target: 5 min (CRITICAL), 10 min (HIGH)            ║
+║  • Runbooks + escalation procedures (docs/10_runbooks)     ║
+║  • Post-mortems within 24h                                 ║
 ╚════════════════════════════════════════════════════════════╝
 ```
 
@@ -607,36 +607,36 @@ Thank you. I'm ready for your questions.
 ║  KEY ACHIEVEMENTS                                          ║
 ║                                                            ║
 ║  ✅ ARCHITECTURE                                           ║
-║     • Integrated OLTP + OLAP + NoSQL (Lambda pattern)     ║
-║     • 1B+ daily transactions, 99.99% uptime               ║
-║     • Zero data loss (RPO=0), 30s failover (RTO)         ║
+║     • Integrated OLTP + OLAP + NoSQL (Lambda pattern)      ║
+║     • 1B+ daily transactions, 99.99% uptime                ║
+║     • Zero data loss (RPO=0), 30s failover (RTO)           ║
 ║                                                            ║
 ║  ✅ INFRASTRUCTURE                                         ║
-║     • AWS (EKS, RDS, Snowflake, MongoDB Atlas)            ║
-║     • Terraform IaC (reproducible, versioned)             ║
-║     • Multi-AZ, auto-scaling, disaster recovery           ║
+║     • AWS (EKS, RDS, Snowflake, MongoDB Atlas)             ║
+║     • Terraform IaC (reproducible, versioned)              ║
+║     • Multi-AZ, auto-scaling, disaster recovery            ║
 ║                                                            ║
 ║  ✅ MACHINE LEARNING                                       ║
-║     • Fraud detection: -40% fraud rate, $15M savings      ║
-║     • Real-time scoring < 100ms                           ║
-║     • Feature store + monitoring (Feast, Evidently)       ║
+║     • Fraud detection: -40% fraud rate, $15M savings       ║
+║     • Real-time scoring < 100ms                            ║
+║     • Feature store + monitoring (Feast, Evidently)        ║
 ║                                                            ║
 ║  ✅ OPERATIONS                                             ║
-║     • Full observability (metrics, logs, traces)          ║
-║     • Incident runbooks + PagerDuty escalation            ║
-║     • 5-10 min MTTR for critical issues                   ║
+║     • Full observability (metrics, logs, traces)           ║
+║     • Incident runbooks + PagerDuty escalation             ║
+║     • 5-10 min MTTR for critical issues                    ║
 ║                                                            ║
 ║  ✅ COMPLIANCE                                             ║
-║     • GDPR: automated erasure across all systems          ║
-║     • PCI-DSS: encryption, tokenization, audit logs       ║
-║     • CCPA: data subject request automation               ║
+║     • GDPR: automated erasure across all systems           ║
+║     • PCI-DSS: encryption, tokenization, audit logs        ║
+║     • CCPA: data subject request automation                ║
 ║                                                            ║
 ║  DOCUMENTATION                                             ║
-║  • 14 detailed markdown documents                         ║
-║  • Runbooks for every incident scenario                   ║
-║  • Accessibility (WCAG 2.1 AA / RGAA 4.1)                ║
+║  • 14 detailed markdown documents                          ║
+║  • Runbooks for every incident scenario                    ║
+║  • Accessibility (WCAG 2.1 AA / RGAA 4.1)                  ║
 ║                                                            ║
-║                    Thank you. Ready for Q&A.              ║
+║                    Thank you. Ready for Q&A.               ║
 ╚════════════════════════════════════════════════════════════╝
 ```
 
